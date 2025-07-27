@@ -137,7 +137,7 @@
                 <div id="chatbot-container" class="glass-effect rounded-2xl shadow-2xl p-4 md:p-6 w-full max-w-lg mx-auto">
                     <div id="chat-window" class="p-4 space-y-4 mb-4">
                         <!-- Initial bot message -->
-                        <div class="chat-message flex">
+                        <div class="chat-message flex justify-start">
                             <div class="bot-message p-3 rounded-lg rounded-bl-none max-w-xs">
                                 <p class="text-sm">Olá! Sou o assistente virtual da MoreFocus. Como posso ajudar a otimizar sua empresa hoje?</p>
                             </div>
@@ -258,68 +258,105 @@
             const chatInput = document.getElementById('chat-input');
             const quickReplyContainer = document.getElementById('chat-quick-replies');
 
-            // Mock function to simulate fetching HTML content from n8n
+            // Generate a unique ID for this conversation session
+            const conversationId = 'user-' + Date.now() + '-' + Math.random().toString(36).substring(2, 9);
+
+            // Real function to call the n8n webhook
             const fetchFromN8N = async (userMessage) => {
-                const lowerCaseMessage = userMessage.toLowerCase();
-                // Simulate network delay
-                await new Promise(res => setTimeout(res, 800));
+                const webhookUrl = 'https://morefocus.duckdns.org/webhook-test/chatbot';
+                const errorMessage = '<p>Desculpe, ocorreu um erro. Tente novamente.</p>';
 
-                // Basic routing based on keywords
-                if (lowerCaseMessage.includes('rpa')) {
-                    return `
-                        <p class="font-bold mb-2">O que é RPA (Automação Robótica de Processos)?</p>
-                        <p class="text-sm">RPA é uma tecnologia que usa 'robôs' de software para automatizar tarefas digitais repetitivas, como preencher formulários, mover arquivos e extrair dados.</p>
-                        <p class="text-sm mt-2">Imagine um funcionário digital que trabalha 24/7 sem erros!</p>
-                    `;
-                } else if (lowerCaseMessage.includes('cases') || lowerCaseMessage.includes('sucesso')) {
-                    return `
-                        <p class="font-bold mb-2">Ótima pergunta! Aqui estão alguns resultados:</p>
-                        <ul class="list-disc list-inside text-sm space-y-1">
-                            <li><strong>Grupo Apisul:</strong> +25% de velocidade na entrega de serviços.</li>
-                            <li><strong>Serasa Experian:</strong> Automação de consultas complexas, reduzindo o tempo de horas para minutos.</li>
-                            <li><strong>Cliente Financeiro:</strong> Redução de 30% nos custos de back-office.</li>
-                        </ul>
-                    `;
-                } else if (lowerCaseMessage.includes('custos') || lowerCaseMessage.includes('economia')) {
-                     return `
-                        <p class="font-bold mb-2">A redução de custos é um dos nossos pilares!</p>
-                        <p class="text-sm">Nossos clientes economizam em média 30-40% ao automatizar processos manuais. Isso acontece por:</p>
-                        <ul class="list-disc list-inside text-sm space-y-1 mt-2">
-                            <li>Redução de erros humanos.</li>
-                            <li>Liberação de equipe para tarefas estratégicas.</li>
-                            <li>Operação 24/7 sem custo adicional.</li>
-                        </ul>
-                        <p class="text-sm mt-2">Quer agendar uma demonstração para calcular seu potencial de economia?</p>
-                    `;
+                try {
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        // Send message and the unique conversation ID
+                        body: JSON.stringify({ 
+                            message: userMessage,
+                            conversationId: conversationId 
+                        })
+                    });
+
+                    if (!response.ok) {
+                        console.error('Webhook response error:', response.status, response.statusText);
+                        return errorMessage;
+                    }
+                    
+                    // The n8n workflow now returns JSON, so we read it as json
+                    const botResponseJson = await response.json();
+                    // Return the text content from the 'output' key
+                    return botResponseJson.output || errorMessage;
+
+                } catch (error) {
+                    console.error('Error connecting to the webhook:', error);
+                    return errorMessage;
                 }
-
-                return `<p>Não entendi muito bem. Você poderia reformular a pergunta? Você pode perguntar sobre 'RPA', 'cases de sucesso' ou 'redução de custos'.</p>`;
             };
 
-            const addMessage = (content, type) => {
+            // This function adds a single message bubble for the user
+            const addUserMessage = (content) => {
                 const messageWrapper = document.createElement('div');
-                messageWrapper.className = `chat-message flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+                messageWrapper.className = 'chat-message flex justify-end';
                 
                 const messageBubble = document.createElement('div');
-                messageBubble.className = `p-3 rounded-lg max-w-md ${type === 'user' ? 'user-message rounded-br-none' : 'bot-message rounded-bl-none'}`;
+                messageBubble.className = 'p-3 rounded-lg max-w-md user-message rounded-br-none';
                 
-                // IMPORTANT: This allows rendering HTML from the bot
-                messageBubble.innerHTML = content;
+                messageBubble.textContent = content;
 
                 messageWrapper.appendChild(messageBubble);
                 chatWindow.appendChild(messageWrapper);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             };
 
+            // This function now takes a plain text string, splits it into paragraphs,
+            // and creates a new styled bubble for each one.
+            const addBotResponse = (textString) => {
+                // Split the text by one or more newline characters
+                const paragraphs = textString.split(/\n+/).filter(p => p.trim() !== '');
+
+                // For each paragraph, create a new message bubble
+                paragraphs.forEach(paragraph => {
+                    const messageWrapper = document.createElement('div');
+                    messageWrapper.className = 'chat-message flex justify-start';
+
+                    const messageBubble = document.createElement('div');
+                    messageBubble.className = 'bot-message p-3 rounded-lg rounded-bl-none max-w-xs';
+                    
+                    const p = document.createElement('p');
+                    p.className = 'text-sm';
+                    p.textContent = paragraph;
+                    
+                    messageBubble.appendChild(p);
+                    messageWrapper.appendChild(messageBubble);
+                    chatWindow.appendChild(messageWrapper);
+                });
+
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            };
+
+
             const handleUserMessage = async (message) => {
                 if (!message.trim()) return;
                 
-                addMessage(message, 'user');
+                addUserMessage(message);
                 chatInput.value = '';
                 chatInput.disabled = true;
 
-                const botResponseHtml = await fetchFromN8N(message);
-                addMessage(botResponseHtml, 'bot');
+                // Add a "typing" indicator inside a proper bubble structure
+                const typingWrapper = document.createElement('div');
+                typingWrapper.className = 'chat-message flex justify-start';
+                typingWrapper.innerHTML = `<div class="bot-message p-3 rounded-lg rounded-bl-none max-w-xs"><p class="italic text-sm">Digitando...</p></div>`;
+                chatWindow.appendChild(typingWrapper);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                const botResponseText = await fetchFromN8N(message);
+                
+                // Remove typing indicator and add the real response
+                typingWrapper.remove();
+                addBotResponse(botResponseText);
+
                 chatInput.disabled = false;
                 chatInput.focus();
             };
