@@ -105,7 +105,7 @@
 <body class="antialiased">
 
     <!-- Header -->
-    <header class="bg-transparent fixed top-0 left-0 right-0 z-50 py-4">
+    <header class="glass-effect fixed top-0 left-0 right-0 z-50 py-3 shadow-lg">
         <div class="container mx-auto px-6 flex justify-between items-center">
             <a href="#">
                 <img src="MoreFocus-Logo-transp-bk.png" alt="Logo MoreFocus" class="h-10 md:h-12">
@@ -149,7 +149,7 @@
                         <button class="quick-reply-btn">Redução de custos</button>
                     </div>
                     <form id="chat-form" class="flex items-center gap-2">
-                        <input type="text" id="chat-input" placeholder="Digite sua pergunta..." class="w-full p-3 bg-primary-darker border border-blue-800 rounded-lg focus:ring-2 focus:ring-accent focus:outline-none text-black transition" autocomplete="off">
+            <textarea id="chat-input" placeholder="Digite sua pergunta..." rows="2" class="w-full p-3 bg-primary-darker border border-blue-800 rounded-lg focus:ring-2 focus:ring-accent focus:outline-none text-black transition resize-none" autocomplete="off"></textarea>
                         <button type="submit" class="bg-accent text-white rounded-lg w-12 h-12 flex-shrink-0 cta-button">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
@@ -263,7 +263,7 @@
 
             // Real function to call the n8n webhook
             const fetchFromN8N = async (userMessage) => {
-                const webhookUrl = 'https://morefocus.duckdns.org/webhook-test/chatbot';
+                const webhookUrl = 'https://morefocus.duckdns.org/webhook/chatbot';
                 const errorMessage = '<p>Desculpe, ocorreu um erro. Tente novamente.</p>';
 
                 try {
