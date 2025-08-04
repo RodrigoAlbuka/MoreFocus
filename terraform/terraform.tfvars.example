@@ -1,66 +1,70 @@
 # MoreFocus - Terraform Configuration Example
+# Variáveis padronizadas em UPPER_CASE
 # Copy this file to terraform.tfvars and customize the values
 
 # AWS Configuration
-aws_region = "us-east-1"  # Região AWS (us-east-1 tem mais recursos free tier)
-environment = "production"
+AWS_REGION = "us-east-2"  # Região AWS (us-east-1 tem mais recursos free tier)
+ENVIRONMENT = "production"
 
 # Project Configuration
-project_name = "morefocus"  # Nome do projeto (usado em recursos)
+PROJECT_NAME = "morefocus"  # Nome do projeto (usado em recursos)
 
 # EC2 Configuration
-instance_type = "t3.micro"  # Free tier eligible
-ebs_volume_size = 20        # GB (free tier: até 30GB)
+INSTANCE_TYPE = "t3.micro"  # Free tier eligible
+EBS_VOLUME_SIZE = 20        # GB (free tier: até 30GB)
 
 # SSH Access (OBRIGATÓRIO)
 # Gere uma chave SSH: ssh-keygen -t rsa -b 4096 -f ~/.ssh/morefocus-key
 # Cole aqui o conteúdo do arquivo ~/.ssh/morefocus-key.pub
-ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-public-key-here"
+SSH_PUBLIC_KEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC... your-public-key-here"
 
-# Database Configuration
-use_rds = false  # true = PostgreSQL RDS, false = SQLite (recomendado para free tier)
-db_name = "morefocus"
-db_user = "postgres"
-db_password = "ChangeThisSecurePassword123!"
+# Database Configuration (Supabase)
+USE_RDS = false  # false = usar Supabase, true = criar RDS PostgreSQL
+DB_NAME = "postgres"
+DB_USER = "postgres"
+DB_PASSWORD = "h88b2wQPK2q-ry+"  # Senha do Supabase
+SUPABASE_HOST = "db.czlelqdsypwtwfmasvik.supabase.co"
+SUPABASE_PASSWORD = "h88b2wQPK2q-ry+"
+SUPABASE_SSL = true
 
 # n8n Configuration
-n8n_user = "admin"
-n8n_password = "ChangeThisSecurePassword123!"
+N8N_USER = "admin"
+N8N_PASSWORD = "MoreFocus2024!Admin"
 
 # Optional: Elastic IP (custa $3.65/mês)
-use_elastic_ip = false
+USE_ELASTIC_IP = false
 
 # Optional: Domain Configuration
-domain_name = ""  # ex: "morefocus.com"
-create_route53_records = false
-use_ssl = true
+DOMAIN_NAME = "morefocus.com.br"  # Seu domínio
+CREATE_ROUTE53_RECORDS = false   # true para criar registros DNS
+USE_SSL = true
 
 # Email Integration (Mailgun)
-mailgun_api_key = ""     # Sua chave da API do Mailgun
-mailgun_domain = ""      # Seu domínio no Mailgun
+MAILGUN_API_KEY = ""     # Sua chave da API do Mailgun
+MAILGUN_DOMAIN = ""      # Seu domínio no Mailgun
 
 # CRM Integration (HubSpot)
-hubspot_access_token = ""  # Token de acesso do HubSpot
+HUBSPOT_ACCESS_TOKEN = ""  # Token de acesso do HubSpot
 
 # Analytics (Google Analytics)
-ga_measurement_id = ""  # ID de medição do GA4
-ga_api_secret = ""      # Segredo da API do GA4
+GA_MEASUREMENT_ID = ""  # ID de medição do GA4
+GA_API_SECRET = ""      # Segredo da API do GA4
 
 # Security (Opcional - restringir acesso)
-allowed_ssh_cidrs = ["0.0.0.0/0"]    # IPs permitidos para SSH
-allowed_http_cidrs = ["0.0.0.0/0"]   # IPs permitidos para HTTP/HTTPS
+ALLOWED_SSH_CIDRS = ["0.0.0.0/0"]    # IPs permitidos para SSH
+ALLOWED_HTTP_CIDRS = ["0.0.0.0/0"]   # IPs permitidos para HTTP/HTTPS
 
 # Cost Optimization
-enable_cloudwatch_monitoring = false  # Evita custos extras
-enable_spot_instances = false         # Não recomendado para produção
+ENABLE_CLOUDWATCH_MONITORING = false  # Evita custos extras
+ENABLE_SPOT_INSTANCES = false         # Não recomendado para produção
 
 # Additional Features (custos extras)
-enable_redis = false          # Cache Redis
-enable_elasticsearch = false # Logs avançados
-enable_auto_scaling = false  # Auto scaling
+ENABLE_REDIS = false          # Cache Redis
+ENABLE_ELASTICSEARCH = false # Logs avançados
+ENABLE_AUTO_SCALING = false  # Auto scaling
 
 # Tags adicionais
-additional_tags = {
+ADDITIONAL_TAGS = {
   Owner = "Seu Nome"
   Team = "MoreFocus"
   CostCenter = "Marketing"
@@ -70,28 +74,28 @@ additional_tags = {
 # CONFIGURAÇÕES POR CENÁRIO
 # ============================================
 
-# CENÁRIO 1: Free Tier Máximo (custo ~$5-10/mês)
-# instance_type = "t3.micro"
-# use_rds = false
-# use_elastic_ip = false
-# enable_cloudwatch_monitoring = false
-# ebs_volume_size = 20
+# CENÁRIO 1: Free Tier Máximo (custo ~$2-5/mês)
+# INSTANCE_TYPE = "t3.micro"
+# USE_RDS = false
+# USE_ELASTIC_IP = false
+# ENABLE_CLOUDWATCH_MONITORING = false
+# EBS_VOLUME_SIZE = 20
 
-# CENÁRIO 2: Produção Básica (custo ~$20-30/mês)
-# instance_type = "t3.small"
-# use_rds = true
-# use_elastic_ip = true
-# enable_cloudwatch_monitoring = true
-# ebs_volume_size = 30
+# CENÁRIO 2: Produção Básica (custo ~$15-25/mês)
+# INSTANCE_TYPE = "t3.small"
+# USE_RDS = false  # Continuar com Supabase
+# USE_ELASTIC_IP = true
+# ENABLE_CLOUDWATCH_MONITORING = true
+# EBS_VOLUME_SIZE = 30
 
-# CENÁRIO 3: Produção Avançada (custo ~$50-100/mês)
-# instance_type = "t3.medium"
-# use_rds = true
-# use_elastic_ip = true
-# enable_cloudwatch_monitoring = true
-# enable_redis = true
-# ebs_volume_size = 50
-# enable_auto_scaling = true
+# CENÁRIO 3: Produção Avançada (custo ~$40-60/mês)
+# INSTANCE_TYPE = "t3.medium"
+# USE_RDS = true  # Migrar para RDS
+# USE_ELASTIC_IP = true
+# ENABLE_CLOUDWATCH_MONITORING = true
+# ENABLE_REDIS = true
+# EBS_VOLUME_SIZE = 50
+# ENABLE_AUTO_SCALING = true
 
 # ============================================
 # CONFIGURAÇÕES POR REGIÃO
@@ -99,6 +103,7 @@ additional_tags = {
 
 # Regiões com Free Tier mais generoso:
 # us-east-1 (N. Virginia) - Mais serviços gratuitos
+# us-east-2 (Ohio) - Boa performance, menos congestionada
 # us-west-2 (Oregon) - Boa performance
 # eu-west-1 (Ireland) - Europa
 # ap-southeast-1 (Singapore) - Ásia
@@ -108,8 +113,8 @@ additional_tags = {
 # ============================================
 
 # Para produção, restrinja os CIDRs:
-# allowed_ssh_cidrs = ["SEU.IP.PUBLICO/32"]
-# allowed_http_cidrs = ["0.0.0.0/0"]  # HTTP pode ficar aberto
+# ALLOWED_SSH_CIDRS = ["SEU.IP.PUBLICO/32"]
+# ALLOWED_HTTP_CIDRS = ["0.0.0.0/0"]  # HTTP pode ficar aberto
 
 # Use senhas fortes:
 # - Mínimo 12 caracteres
@@ -121,31 +126,32 @@ additional_tags = {
 # ============================================
 
 # Para monitoramento básico gratuito:
-# enable_cloudwatch_monitoring = false
+# ENABLE_CLOUDWATCH_MONITORING = false
 # 
 # Para monitoramento avançado (custo extra):
-# enable_cloudwatch_monitoring = true
-# enable_elasticsearch = true
+# ENABLE_CLOUDWATCH_MONITORING = true
+# ENABLE_ELASTICSEARCH = true
 
 # ============================================
 # BACKUP
 # ============================================
 
 # Backups automáticos são configurados via cron:
-# - Diário às 2:00 AM
+# - A cada 15 minutos: health check
+# - Diário às 2:00 AM: backup completo
 # - Retenção de 7 dias
 # - Upload para S3
 
-# Para backups mais frequentes, edite o cron no user_data.sh
+# Para backups mais frequentes, edite o user_data.sh
 
 # ============================================
 # DOMÍNIO E SSL
 # ============================================
 
 # Se você tem um domínio:
-# domain_name = "morefocus.seudominio.com"
-# create_route53_records = true
-# use_ssl = true
+# DOMAIN_NAME = "morefocus.seudominio.com"
+# CREATE_ROUTE53_RECORDS = true
+# USE_SSL = true
 
 # Isso configurará:
 # - Registro DNS no Route53
@@ -172,4 +178,22 @@ additional_tags = {
 # 3. Verifique os logs: terraform apply -auto-approve
 # 4. Acesse a instância: ssh -i ~/.ssh/morefocus-key ubuntu@IP
 # 5. Verifique os logs: tail -f /var/log/user-data.log
+
+# ============================================
+# EXEMPLO DE CONFIGURAÇÃO COMPLETA
+# ============================================
+
+# AWS_REGION = "us-east-2"
+# PROJECT_NAME = "morefocus"
+# INSTANCE_TYPE = "t3.micro"
+# EBS_VOLUME_SIZE = 20
+# SSH_PUBLIC_KEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC..."
+# USE_RDS = false
+# N8N_USER = "admin"
+# N8N_PASSWORD = "MoreFocus2024!Secure"
+# SUPABASE_HOST = "db.czlelqdsypwtwfmasvik.supabase.co"
+# SUPABASE_PASSWORD = "h88b2wQPK2q-ry+"
+# DOMAIN_NAME = "morefocus.com.br"
+# USE_ELASTIC_IP = false
+# ENABLE_CLOUDWATCH_MONITORING = false
 

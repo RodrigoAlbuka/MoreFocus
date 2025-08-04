@@ -1,5 +1,6 @@
 # MoreFocus - Infraestrutura AWS com Terraform
-# Versão Free Tier Otimizada
+# Versão Free Tier Otimizada com Supabase PostgreSQL
+# Variáveis padronizadas em UPPER_CASE
 
 terraform {
   required_version = ">= 1.0"
@@ -13,12 +14,12 @@ terraform {
 
 # Provider AWS
 provider "aws" {
-  region = var.aws_region
+  region = var.AWS_REGION
   
   default_tags {
     tags = {
       Project     = "MoreFocus"
-      Environment = var.environment
+      Environment = var.ENVIRONMENT
       ManagedBy   = "Terraform"
       Owner       = "MoreFocus Team"
     }
@@ -47,13 +48,13 @@ data "aws_ami" "ubuntu" {
 
 # Key Pair para acesso SSH
 resource "aws_key_pair" "morefocus" {
-  key_name   = "${var.project_name}-keypair"
-  public_key = var.ssh_public_key
+  key_name   = "${var.PROJECT_NAME}-keypair"
+  public_key = var.SSH_PUBLIC_KEY
 }
 
 # Security Group para EC2
 resource "aws_security_group" "morefocus_ec2" {
-  name_prefix = "${var.project_name}-ec2-"
+  name_prefix = "${var.PROJECT_NAME}-ec2-"
   description = "Security group for MoreFocus EC2 instance"
 
   # SSH
@@ -61,7 +62,7 @@ resource "aws_security_group" "morefocus_ec2" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.ALLOWED_SSH_CIDRS
     description = "SSH access"
   }
 
@@ -70,7 +71,7 @@ resource "aws_security_group" "morefocus_ec2" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.ALLOWED_HTTP_CIDRS
     description = "HTTP access"
   }
 
@@ -79,7 +80,7 @@ resource "aws_security_group" "morefocus_ec2" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.ALLOWED_HTTP_CIDRS
     description = "HTTPS access"
   }
 
@@ -88,7 +89,7 @@ resource "aws_security_group" "morefocus_ec2" {
     from_port   = 5678
     to_port     = 5678
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.ALLOWED_HTTP_CIDRS
     description = "n8n interface"
   }
 
@@ -102,124 +103,63 @@ resource "aws_security_group" "morefocus_ec2" {
   }
 
   tags = {
-    Name = "${var.project_name}-ec2-sg"
-  }
-}
-
-# Security Group para RDS (se usar PostgreSQL)
-resource "aws_security_group" "morefocus_rds" {
-  count = var.use_rds ? 1 : 0
-  
-  name_prefix = "${var.project_name}-rds-"
-  description = "Security group for MoreFocus RDS instance"
-
-  ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = [aws_security_group.morefocus_ec2.id]
-    description     = "PostgreSQL access from EC2"
-  }
-
-  tags = {
-    Name = "${var.project_name}-rds-sg"
+    Name = "${var.PROJECT_NAME}-ec2-sg"
   }
 }
 
 # EC2 Instance
 resource "aws_instance" "morefocus" {
   ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.instance_type
+  instance_type          = var.INSTANCE_TYPE
   key_name              = aws_key_pair.morefocus.key_name
   vpc_security_group_ids = [aws_security_group.morefocus_ec2.id]
   
-  # User data para setup inicial
+  # User data com variáveis padronizadas
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    db_host     = var.use_rds ? aws_db_instance.morefocus[0].endpoint : "localhost"
-    db_name     = var.db_name
-    db_user     = var.db_user
-    db_password = var.db_password
-    n8n_user    = var.n8n_user
-    n8n_password = var.n8n_password
-    use_rds     = var.use_rds
+    N8N_USER           = var.N8N_USER
+    N8N_PASSWORD       = var.N8N_PASSWORD
+    SUPABASE_HOST      = var.SUPABASE_HOST
+    SUPABASE_PASSWORD  = var.SUPABASE_PASSWORD
+    DB_NAME            = var.DB_NAME
+    DB_USER            = var.DB_USER
+    PROJECT_NAME       = var.PROJECT_NAME
   }))
 
   # EBS otimizado para free tier
   root_block_device {
     volume_type = "gp3"
-    volume_size = var.ebs_volume_size
+    volume_size = var.EBS_VOLUME_SIZE
     encrypted   = true
     
     tags = {
-      Name = "${var.project_name}-root-volume"
+      Name = "${var.PROJECT_NAME}-root-volume"
     }
   }
 
   tags = {
-    Name = "${var.project_name}-main"
+    Name = "${var.PROJECT_NAME}-main"
     Type = "Application Server"
   }
 }
 
-# RDS Instance (opcional - apenas se não usar SQLite)
-resource "aws_db_subnet_group" "morefocus" {
-  count = var.use_rds ? 1 : 0
+# Elastic IP (opcional)
+resource "aws_eip" "morefocus" {
+  count = var.USE_ELASTIC_IP ? 1 : 0
   
-  name       = "${var.project_name}-db-subnet-group"
-  subnet_ids = data.aws_subnets.default.ids
-
-  tags = {
-    Name = "${var.project_name}-db-subnet-group"
-  }
-}
-
-data "aws_subnets" "default" {
-  filter {
-    name   = "default-for-az"
-    values = ["true"]
-  }
-}
-
-resource "aws_db_instance" "morefocus" {
-  count = var.use_rds ? 1 : 0
-  
-  identifier = "${var.project_name}-db"
-  
-  # Free tier eligible
-  engine         = "postgres"
-  engine_version = "14.9"
-  instance_class = "db.t3.micro"
-  
-  allocated_storage     = 20
-  max_allocated_storage = 20
-  storage_type         = "gp2"
-  storage_encrypted    = true
-  
-  db_name  = var.db_name
-  username = var.db_user
-  password = var.db_password
-  
-  vpc_security_group_ids = [aws_security_group.morefocus_rds[0].id]
-  db_subnet_group_name   = aws_db_subnet_group.morefocus[0].name
-  
-  backup_retention_period = 7
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
-  
-  skip_final_snapshot = true
-  deletion_protection = false
+  instance = aws_instance.morefocus.id
+  domain   = "vpc"
   
   tags = {
-    Name = "${var.project_name}-database"
+    Name = "${var.PROJECT_NAME}-eip"
   }
 }
 
 # S3 Bucket para backups e assets
 resource "aws_s3_bucket" "morefocus" {
-  bucket = "${var.project_name}-${random_id.bucket_suffix.hex}"
+  bucket = "${var.PROJECT_NAME}-${random_id.bucket_suffix.hex}"
   
   tags = {
-    Name = "${var.project_name}-storage"
+    Name = "${var.PROJECT_NAME}-storage"
   }
 }
 
@@ -255,29 +195,19 @@ resource "aws_s3_bucket_public_access_block" "morefocus" {
 
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "morefocus" {
-  name              = "/aws/ec2/${var.project_name}"
-  retention_in_days = 7
+  count = var.ENABLE_CLOUDWATCH_MONITORING ? 1 : 0
+  
+  name              = "/aws/ec2/${var.PROJECT_NAME}"
+  retention_in_days = var.BACKUP_RETENTION_DAYS
   
   tags = {
-    Name = "${var.project_name}-logs"
-  }
-}
-
-# Elastic IP (opcional)
-resource "aws_eip" "morefocus" {
-  count = var.use_elastic_ip ? 1 : 0
-  
-  instance = aws_instance.morefocus.id
-  domain   = "vpc"
-  
-  tags = {
-    Name = "${var.project_name}-eip"
+    Name = "${var.PROJECT_NAME}-logs"
   }
 }
 
 # IAM Role para EC2
 resource "aws_iam_role" "morefocus_ec2" {
-  name = "${var.project_name}-ec2-role"
+  name = "${var.PROJECT_NAME}-ec2-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -294,7 +224,7 @@ resource "aws_iam_role" "morefocus_ec2" {
 }
 
 resource "aws_iam_role_policy" "morefocus_ec2" {
-  name = "${var.project_name}-ec2-policy"
+  name = "${var.PROJECT_NAME}-ec2-policy"
   role = aws_iam_role.morefocus_ec2.id
 
   policy = jsonencode({
@@ -323,14 +253,14 @@ resource "aws_iam_role_policy" "morefocus_ec2" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        Resource = "${aws_cloudwatch_log_group.morefocus.arn}:*"
+        Resource = var.ENABLE_CLOUDWATCH_MONITORING ? "${aws_cloudwatch_log_group.morefocus[0].arn}:*" : ""
       }
     ]
   })
 }
 
 resource "aws_iam_instance_profile" "morefocus_ec2" {
-  name = "${var.project_name}-ec2-profile"
+  name = "${var.PROJECT_NAME}-ec2-profile"
   role = aws_iam_role.morefocus_ec2.name
 }
 

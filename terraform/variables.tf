@@ -1,24 +1,24 @@
-# MoreFocus - Terraform Variables
+# MoreFocus - Terraform Variables (UPPER_CASE Standardized)
 
-variable "aws_region" {
+variable "AWS_REGION" {
   description = "AWS region for resources"
   type        = string
   default     = "us-east-1"
 }
 
-variable "environment" {
+variable "ENVIRONMENT" {
   description = "Environment name"
   type        = string
   default     = "production"
 }
 
-variable "project_name" {
+variable "PROJECT_NAME" {
   description = "Project name for resource naming"
   type        = string
   default     = "morefocus"
 }
 
-variable "instance_type" {
+variable "INSTANCE_TYPE" {
   description = "EC2 instance type"
   type        = string
   default     = "t3.micro"  # Free tier eligible
@@ -27,105 +27,117 @@ variable "instance_type" {
     condition = contains([
       "t3.micro", "t3.small", "t3.medium",
       "t2.micro", "t2.small", "t2.medium"
-    ], var.instance_type)
+    ], var.INSTANCE_TYPE)
     error_message = "Instance type must be a valid EC2 type."
   }
 }
 
-variable "ebs_volume_size" {
+variable "EBS_VOLUME_SIZE" {
   description = "Size of the EBS root volume in GB"
   type        = number
   default     = 20  # Free tier: up to 30GB
   
   validation {
-    condition     = var.ebs_volume_size >= 8 && var.ebs_volume_size <= 100
+    condition     = var.EBS_VOLUME_SIZE >= 8 && var.EBS_VOLUME_SIZE <= 100
     error_message = "EBS volume size must be between 8 and 100 GB."
   }
 }
 
-variable "ssh_public_key" {
+variable "SSH_PUBLIC_KEY" {
   description = "SSH public key for EC2 access"
   type        = string
   default     = ""
   
   validation {
-    condition     = length(var.ssh_public_key) > 0
+    condition     = length(var.SSH_PUBLIC_KEY) > 0
     error_message = "SSH public key is required."
   }
 }
 
-variable "use_rds" {
+variable "USE_RDS" {
   description = "Whether to use RDS PostgreSQL instead of SQLite"
   type        = bool
   default     = false  # SQLite para free tier
 }
 
-variable "use_elastic_ip" {
+variable "USE_ELASTIC_IP" {
   description = "Whether to allocate an Elastic IP"
   type        = bool
   default     = false  # Evitar custos extras
 }
 
 # Database variables
-variable "db_name" {
+variable "DB_NAME" {
   description = "Database name"
   type        = string
   default     = "morefocus"
 }
 
-variable "db_user" {
+variable "DB_USER" {
   description = "Database username"
   type        = string
   default     = "postgres"
 }
 
-variable "db_password" {
+variable "DB_PASSWORD" {
   description = "Database password"
   type        = string
   sensitive   = true
   default     = "ChangeThisPassword123!"
   
   validation {
-    condition     = length(var.db_password) >= 8
+    condition     = length(var.DB_PASSWORD) >= 8
     error_message = "Database password must be at least 8 characters long."
   }
 }
 
+variable "DB_HOST" {
+  description = "Database host (for external databases like Supabase)"
+  type        = string
+  default     = "db.czlelqdsypwtwfmasvik.supabase.co"
+}
+
+variable "DB_PORT" {
+  description = "Database port"
+  type        = number
+  default     = 5432
+}
+
 # n8n variables
-variable "n8n_user" {
+variable "N8N_USER" {
   description = "n8n admin username"
   type        = string
   default     = "admin"
 }
 
-variable "n8n_password" {
+variable "N8N_PASSWORD" {
   description = "n8n admin password"
   type        = string
   sensitive   = true
   default     = "ChangeThisPassword123!"
   
   validation {
-    condition     = length(var.n8n_password) >= 8
+    condition     = length(var.N8N_PASSWORD) >= 8
     error_message = "n8n password must be at least 8 characters long."
   }
 }
 
 # Email configuration
-variable "mailgun_api_key" {
+variable "MAILGUN_API_KEY" {
   description = "Mailgun API key for email sending"
   type        = string
   default     = ""
   sensitive   = true
 }
 
-variable "mailgun_domain" {
+variable "MAILGUN_DOMAIN" {
   description = "Mailgun domain for email sending"
   type        = string
   default     = ""
 }
 
 # HubSpot integration
-variable "hubspot_access_token" {
+variable "HUBSPOT_ACCESS_TOKEN" {
   description = "HubSpot access token for CRM integration"
   type        = string
   default     = ""
@@ -133,13 +145,13 @@ variable "hubspot_access_token" {
 }
 
 # Google Analytics
-variable "ga_measurement_id" {
+variable "GA_MEASUREMENT_ID" {
   description = "Google Analytics Measurement ID"
   type        = string
   default     = ""
 }
 
-variable "ga_api_secret" {
+variable "GA_API_SECRET" {
   description = "Google Analytics API Secret"
   type        = string
   default     = ""
@@ -147,107 +159,127 @@ variable "ga_api_secret" {
 }
 
 # Domain configuration
-variable "domain_name" {
+variable "DOMAIN_NAME" {
   description = "Domain name for the application"
   type        = string
   default     = ""
 }
 
-variable "create_route53_records" {
+variable "CREATE_ROUTE53_RECORDS" {
   description = "Whether to create Route53 DNS records"
   type        = bool
   default     = false
 }
 
 # SSL/TLS
-variable "use_ssl" {
+variable "USE_SSL" {
   description = "Whether to configure SSL/TLS with Let's Encrypt"
   type        = bool
   default     = true
 }
 
 # Monitoring
-variable "enable_cloudwatch_monitoring" {
+variable "ENABLE_CLOUDWATCH_MONITORING" {
   description = "Enable detailed CloudWatch monitoring"
   type        = bool
   default     = false  # Evitar custos extras no free tier
 }
 
 # Backup configuration
-variable "backup_retention_days" {
+variable "BACKUP_RETENTION_DAYS" {
   description = "Number of days to retain backups"
   type        = number
   default     = 7
 }
 
 # Scaling configuration
-variable "enable_auto_scaling" {
+variable "ENABLE_AUTO_SCALING" {
   description = "Enable auto scaling (not recommended for free tier)"
   type        = bool
   default     = false
 }
 
-variable "min_instances" {
+variable "MIN_INSTANCES" {
   description = "Minimum number of instances in auto scaling group"
   type        = number
   default     = 1
 }
 
-variable "max_instances" {
+variable "MAX_INSTANCES" {
   description = "Maximum number of instances in auto scaling group"
   type        = number
   default     = 1
 }
 
 # Security
-variable "allowed_ssh_cidrs" {
+variable "ALLOWED_SSH_CIDRS" {
   description = "CIDR blocks allowed for SSH access"
   type        = list(string)
   default     = ["0.0.0.0/0"]  # Restringir em produção
 }
 
-variable "allowed_http_cidrs" {
+variable "ALLOWED_HTTP_CIDRS" {
   description = "CIDR blocks allowed for HTTP/HTTPS access"
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
 
 # Cost optimization
-variable "enable_spot_instances" {
+variable "ENABLE_SPOT_INSTANCES" {
   description = "Use spot instances for cost optimization (not recommended for production)"
   type        = bool
   default     = false
 }
 
-variable "spot_price" {
+variable "SPOT_PRICE" {
   description = "Maximum spot price per hour"
   type        = string
   default     = "0.01"
 }
 
 # Tags
-variable "additional_tags" {
+variable "ADDITIONAL_TAGS" {
   description = "Additional tags to apply to all resources"
   type        = map(string)
   default     = {}
 }
 
 # Feature flags
-variable "enable_redis" {
+variable "ENABLE_REDIS" {
   description = "Enable Redis for caching (additional cost)"
   type        = bool
   default     = false
 }
 
-variable "enable_elasticsearch" {
+variable "ENABLE_ELASTICSEARCH" {
   description = "Enable Elasticsearch for logging (additional cost)"
   type        = bool
   default     = false
 }
 
-variable "enable_vpc" {
+variable "ENABLE_VPC" {
   description = "Create custom VPC instead of using default"
   type        = bool
   default     = false  # Usar VPC padrão para simplicidade
+}
+
+# Supabase specific variables
+variable "SUPABASE_HOST" {
+  description = "Supabase database host"
+  type        = string
+  default     = "db.czlelqdsypwtwfmasvik.supabase.co"
+}
+
+variable "SUPABASE_PASSWORD" {
+  description = "Supabase database password"
+  type        = string
+  sensitive   = true
+  default     = "h88b2wQPK2q-ry+"
+}
+
+variable "SUPABASE_SSL" {
+  description = "Enable SSL for Supabase connection"
+  type        = bool
+  default     = true
 }
 
