@@ -1,0 +1,169 @@
+{
+  "name": "APQ - Agente de Prospecção e Qualificação",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "prospeccao",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-prospeccao",
+      "name": "Webhook - Nova Prospecção",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// APQ - Agente de Prospecção e Qualificação\n// Processa dados de entrada e qualifica leads\n\nconst inputData = $input.all();\nconst results = [];\n\nfor (const item of inputData) {\n  const data = item.json;\n  \n  // Validação básica dos dados\n  if (!data.company || !data.email) {\n    results.push({\n      json: {\n        status: 'error',\n        message: 'Dados obrigatórios faltando: company e email são necessários',\n        input: data\n      }\n    });\n    continue;\n  }\n  \n  // Qualificação do lead baseada em critérios\n  let score = 0;\n  let qualificationNotes = [];\n  \n  // Critério 1: Tamanho da empresa\n  if (data.employees) {\n    if (data.employees >= 100) {\n      score += 30;\n      qualificationNotes.push('Empresa de grande porte (+30 pontos)');\n    } else if (data.employees >= 50) {\n      score += 20;\n      qualificationNotes.push('Empresa de médio porte (+20 pontos)');\n    } else {\n      score += 10;\n      qualificationNotes.push('Empresa de pequeno porte (+10 pontos)');\n    }\n  }\n  \n  // Critério 2: Setor de atuação\n  const highValueSectors = ['technology', 'finance', 'healthcare', 'manufacturing'];\n  if (data.sector && highValueSectors.includes(data.sector.toLowerCase())) {\n    score += 25;\n    qualificationNotes.push(`Setor de alto valor: ${data.sector} (+25 pontos)`);\n  }\n  \n  // Critério 3: Orçamento declarado\n  if (data.budget) {\n    if (data.budget >= 10000) {\n      score += 35;\n      qualificationNotes.push('Orçamento alto (+35 pontos)');\n    } else if (data.budget >= 5000) {\n      score += 25;\n      qualificationNotes.push('Orçamento médio (+25 pontos)');\n    } else {\n      score += 10;\n      qualificationNotes.push('Orçamento baixo (+10 pontos)');\n    }\n  }\n  \n  // Critério 4: Urgência\n  if (data.urgency) {\n    if (data.urgency.toLowerCase() === 'high') {\n      score += 20;\n      qualificationNotes.push('Alta urgência (+20 pontos)');\n    } else if (data.urgency.toLowerCase() === 'medium') {\n      score += 10;\n      qualificationNotes.push('Média urgência (+10 pontos)');\n    }\n  }\n  \n  // Determinar classificação do lead\n  let classification;\n  if (score >= 80) {\n    classification = 'Hot Lead';\n  } else if (score >= 60) {\n    classification = 'Warm Lead';\n  } else if (score >= 40) {\n    classification = 'Cold Lead';\n  } else {\n    classification = 'Low Quality Lead';\n  }\n  \n  // Gerar próximas ações recomendadas\n  let nextActions = [];\n  if (score >= 80) {\n    nextActions = [\n      'Agendar demo imediatamente',\n      'Enviar proposta personalizada',\n      'Contato telefônico em 24h'\n    ];\n  } else if (score >= 60) {\n    nextActions = [\n      'Enviar material educativo',\n      'Agendar call de descoberta',\n      'Adicionar à sequência de nurturing'\n    ];\n  } else {\n    nextActions = [\n      'Adicionar à lista de newsletter',\n      'Enviar conteúdo de valor',\n      'Reavaliar em 30 dias'\n    ];\n  }\n  \n  results.push({\n    json: {\n      status: 'success',\n      leadId: `LEAD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n      company: data.company,\n      email: data.email,\n      contact: data.contact || '',\n      phone: data.phone || '',\n      sector: data.sector || '',\n      employees: data.employees || 0,\n      budget: data.budget || 0,\n      urgency: data.urgency || 'low',\n      qualificationScore: score,\n      classification: classification,\n      qualificationNotes: qualificationNotes,\n      nextActions: nextActions,\n      processedAt: new Date().toISOString(),\n      agent: 'APQ - Agente de Prospecção e Qualificação'\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "js-qualificacao",
+      "name": "Qualificação de Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "hot-lead",
+              "leftValue": "={{ $json.classification }}",
+              "rightValue": "Hot Lead",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-hot-lead",
+      "name": "É Hot Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar dados para envio ao ANE (Agente de Nutrição)\nconst leadData = $input.all()[0].json;\n\n// Criar payload para o próximo agente\nconst payload = {\n  leadId: leadData.leadId,\n  company: leadData.company,\n  email: leadData.email,\n  contact: leadData.contact,\n  classification: leadData.classification,\n  score: leadData.qualificationScore,\n  nextActions: leadData.nextActions,\n  source: 'APQ',\n  priority: leadData.classification === 'Hot Lead' ? 'high' : 'normal',\n  timestamp: new Date().toISOString()\n};\n\nreturn [{ json: payload }];"
+      },
+      "id": "prepare-for-ane",
+      "name": "Preparar para ANE",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log para leads que não são Hot Leads\nconst leadData = $input.all()[0].json;\n\nconsole.log(`Lead ${leadData.classification} processado:`, {\n  company: leadData.company,\n  score: leadData.qualificationScore,\n  nextActions: leadData.nextActions\n});\n\nreturn [{ json: {\n  message: `Lead ${leadData.classification} processado e armazenado`,\n  leadId: leadData.leadId,\n  classification: leadData.classification\n}}];"
+      },
+      "id": "log-other-leads",
+      "name": "Log Outros Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response-success",
+      "name": "Resposta de Sucesso",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Nova Prospecção": {
+      "main": [
+        [
+          {
+            "node": "Qualificação de Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qualificação de Lead": {
+      "main": [
+        [
+          {
+            "node": "É Hot Lead?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Hot Lead?": {
+      "main": [
+        [
+          {
+            "node": "Preparar para ANE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Outros Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar para ANE": {
+      "main": [
+        [
+          {
+            "node": "Resposta de Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Outros Leads": {
+      "main": [
+        [
+          {
+            "node": "Resposta de Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "1",
+      "name": "MoreFocus"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

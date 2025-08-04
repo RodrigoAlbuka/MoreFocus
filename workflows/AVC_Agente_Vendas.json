@@ -1,0 +1,169 @@
+{
+  "name": "AVC - Agente de Vendas e Conversão",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vendas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-vendas",
+      "name": "Webhook - Processo de Vendas",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AVC - Agente de Vendas e Conversão\n// Processa oportunidades de venda e gera propostas\n\nconst inputData = $input.all();\nconst results = [];\n\nfor (const item of inputData) {\n  const data = item.json;\n  \n  // Validação dos dados de entrada\n  if (!data.leadId || !data.email) {\n    results.push({\n      json: {\n        status: 'error',\n        message: 'Dados obrigatórios faltando: leadId e email são necessários',\n        input: data\n      }\n    });\n    continue;\n  }\n  \n  // Análise do estágio de vendas\n  const salesStage = data.salesStage || 'initial_contact';\n  const leadScore = data.score || 0;\n  const budget = data.budget || 0;\n  const urgency = data.urgency || 'low';\n  \n  let salesStrategy = {};\n  let proposalData = {};\n  \n  // Definir estratégia baseada no estágio de vendas\n  switch (salesStage) {\n    case 'initial_contact':\n      salesStrategy = {\n        stage: 'Contato Inicial',\n        objective: 'Qualificar necessidades e agendar demo',\n        actions: [\n          'Enviar email de boas-vindas personalizado',\n          'Agendar call de descoberta',\n          'Enviar questionário de necessidades'\n        ],\n        timeline: '3-5 dias',\n        nextStage: 'discovery_call'\n      };\n      break;\n      \n    case 'discovery_call':\n      salesStrategy = {\n        stage: 'Call de Descoberta',\n        objective: 'Entender pain points e definir solução',\n        actions: [\n          'Conduzir call de descoberta estruturada',\n          'Mapear processos atuais do cliente',\n          'Identificar oportunidades de automação',\n          'Calcular ROI potencial'\n        ],\n        timeline: '1-2 semanas',\n        nextStage: 'demo_presentation'\n      };\n      break;\n      \n    case 'demo_presentation':\n      salesStrategy = {\n        stage: 'Demonstração',\n        objective: 'Mostrar solução personalizada',\n        actions: [\n          'Preparar demo customizada',\n          'Apresentar casos de uso específicos',\n          'Demonstrar ROI calculado',\n          'Coletar feedback e objeções'\n        ],\n        timeline: '1 semana',\n        nextStage: 'proposal_generation'\n      };\n      break;\n      \n    case 'proposal_generation':\n      salesStrategy = {\n        stage: 'Geração de Proposta',\n        objective: 'Criar proposta comercial detalhada',\n        actions: [\n          'Gerar proposta personalizada',\n          'Incluir cronograma de implementação',\n          'Definir termos comerciais',\n          'Agendar apresentação da proposta'\n        ],\n        timeline: '3-5 dias',\n        nextStage: 'negotiation'\n      };\n      \n      // Gerar dados da proposta\n      proposalData = generateProposal(data);\n      break;\n      \n    case 'negotiation':\n      salesStrategy = {\n        stage: 'Negociação',\n        objective: 'Finalizar termos e fechar venda',\n        actions: [\n          'Apresentar proposta ao cliente',\n          'Negociar termos e condições',\n          'Tratar objeções',\n          'Preparar contrato final'\n        ],\n        timeline: '1-2 semanas',\n        nextStage: 'closing'\n      };\n      break;\n      \n    case 'closing':\n      salesStrategy = {\n        stage: 'Fechamento',\n        objective: 'Finalizar venda e iniciar onboarding',\n        actions: [\n          'Enviar contrato para assinatura',\n          'Processar pagamento inicial',\n          'Agendar kick-off do projeto',\n          'Transferir para equipe de implementação'\n        ],\n        timeline: '3-7 dias',\n        nextStage: 'won'\n      };\n      break;\n  }\n  \n  // Calcular probabilidade de fechamento\n  let closingProbability = calculateClosingProbability({\n    stage: salesStage,\n    score: leadScore,\n    budget: budget,\n    urgency: urgency,\n    engagement: data.engagement || 'low'\n  });\n  \n  // Definir próximas ações automatizadas\n  let automatedActions = getAutomatedActions(salesStage, data);\n  \n  // Gerar insights de vendas\n  let salesInsights = generateSalesInsights(data, salesStrategy, closingProbability);\n  \n  results.push({\n    json: {\n      status: 'success',\n      leadId: data.leadId,\n      opportunityId: `OPP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n      company: data.company,\n      email: data.email,\n      contact: data.contact,\n      currentStage: salesStage,\n      salesStrategy: salesStrategy,\n      closingProbability: closingProbability,\n      proposalData: proposalData,\n      automatedActions: automatedActions,\n      salesInsights: salesInsights,\n      estimatedValue: calculateDealValue(budget, data.employees),\n      timeline: salesStrategy.timeline,\n      processedAt: new Date().toISOString(),\n      agent: 'AVC - Agente de Vendas e Conversão'\n    }\n  });\n}\n\n// Função para gerar proposta personalizada\nfunction generateProposal(data) {\n  const basePrice = 5000; // Preço base\n  const employees = data.employees || 50;\n  const complexity = data.complexity || 'medium';\n  \n  let multiplier = 1;\n  if (complexity === 'high') multiplier = 1.5;\n  if (complexity === 'enterprise') multiplier = 2;\n  \n  const monthlyPrice = Math.round(basePrice * (employees / 50) * multiplier);\n  const setupFee = Math.round(monthlyPrice * 0.5);\n  const annualDiscount = 0.15; // 15% desconto anual\n  \n  return {\n    packageType: employees > 200 ? 'Enterprise' : employees > 50 ? 'Professional' : 'Starter',\n    monthlyPrice: monthlyPrice,\n    annualPrice: Math.round(monthlyPrice * 12 * (1 - annualDiscount)),\n    setupFee: setupFee,\n    savings: Math.round(monthlyPrice * 12 * annualDiscount),\n    features: getPackageFeatures(employees),\n    implementation: {\n      duration: employees > 200 ? '8-12 semanas' : employees > 50 ? '4-8 semanas' : '2-4 semanas',\n      phases: ['Análise', 'Desenvolvimento', 'Testes', 'Deploy', 'Treinamento'],\n      support: '24/7 durante implementação'\n    },\n    roi: {\n      timeToROI: '3-6 meses',\n      expectedSavings: Math.round(monthlyPrice * 3), // 3x o investimento mensal\n      efficiencyGain: '40-60%'\n    }\n  };\n}\n\n// Função para calcular probabilidade de fechamento\nfunction calculateClosingProbability(factors) {\n  let probability = 0;\n  \n  // Base por estágio\n  const stageProbabilities = {\n    'initial_contact': 10,\n    'discovery_call': 25,\n    'demo_presentation': 45,\n    'proposal_generation': 65,\n    'negotiation': 80,\n    'closing': 95\n  };\n  \n  probability = stageProbabilities[factors.stage] || 10;\n  \n  // Ajustes baseados em outros fatores\n  if (factors.score > 80) probability += 10;\n  if (factors.budget > 10000) probability += 5;\n  if (factors.urgency === 'high') probability += 10;\n  if (factors.engagement === 'high') probability += 5;\n  \n  return Math.min(probability, 95); // Máximo 95%\n}\n\n// Função para definir ações automatizadas\nfunction getAutomatedActions(stage, data) {\n  const actions = {\n    'initial_contact': [\n      {\n        type: 'email',\n        template: 'welcome_sales',\n        delay: '1 hour',\n        subject: `Bem-vindo, ${data.contact}! Vamos começar sua jornada de automação`\n      },\n      {\n        type: 'calendar_invite',\n        template: 'discovery_call',\n        delay: '24 hours',\n        duration: '30 minutes'\n      }\n    ],\n    'discovery_call': [\n      {\n        type: 'email',\n        template: 'pre_call_questionnaire',\n        delay: '2 hours',\n        subject: 'Preparação para nossa conversa - Questionário rápido'\n      },\n      {\n        type: 'reminder',\n        template: 'call_reminder',\n        delay: '1 day',\n        subject: 'Lembrete: Nossa call de descoberta amanhã'\n      }\n    ],\n    'demo_presentation': [\n      {\n        type: 'email',\n        template: 'demo_preparation',\n        delay: '1 hour',\n        subject: 'Preparando sua demo personalizada'\n      },\n      {\n        type: 'calendar_invite',\n        template: 'demo_session',\n        delay: '24 hours',\n        duration: '45 minutes'\n      }\n    ],\n    'proposal_generation': [\n      {\n        type: 'email',\n        template: 'proposal_ready',\n        delay: '2 hours',\n        subject: 'Sua proposta personalizada está pronta!'\n      }\n    ],\n    'negotiation': [\n      {\n        type: 'follow_up',\n        template: 'negotiation_follow_up',\n        delay: '3 days',\n        subject: 'Dúvidas sobre a proposta?'\n      }\n    ],\n    'closing': [\n      {\n        type: 'contract',\n        template: 'send_contract',\n        delay: '1 hour',\n        subject: 'Contrato para assinatura - Vamos começar!'\n      }\n    ]\n  };\n  \n  return actions[stage] || [];\n}\n\n// Função para gerar insights de vendas\nfunction generateSalesInsights(data, strategy, probability) {\n  return {\n    dealHealth: probability > 70 ? 'Excelente' : probability > 50 ? 'Boa' : probability > 30 ? 'Média' : 'Baixa',\n    keyRisks: identifyRisks(data, probability),\n    recommendations: getRecommendations(data, strategy),\n    competitorAnalysis: getCompetitorInsights(data),\n    nextBestAction: strategy.actions[0]\n  };\n}\n\n// Funções auxiliares\nfunction getPackageFeatures(employees) {\n  if (employees > 200) {\n    return ['Automação ilimitada', 'API dedicada', 'Suporte 24/7', 'Manager dedicado', 'SLA 99.9%'];\n  } else if (employees > 50) {\n    return ['Até 50 automações', 'API compartilhada', 'Suporte business hours', 'SLA 99.5%'];\n  } else {\n    return ['Até 10 automações', 'Suporte via email', 'SLA 99%', 'Documentação completa'];\n  }\n}\n\nfunction calculateDealValue(budget, employees) {\n  const baseValue = Math.max(budget || 5000, (employees || 50) * 100);\n  return Math.round(baseValue);\n}\n\nfunction identifyRisks(data, probability) {\n  const risks = [];\n  if (probability < 50) risks.push('Baixa probabilidade de fechamento');\n  if (!data.budget || data.budget < 5000) risks.push('Orçamento limitado');\n  if (data.urgency === 'low') risks.push('Baixa urgência do cliente');\n  return risks;\n}\n\nfunction getRecommendations(data, strategy) {\n  return [\n    `Focar em: ${strategy.objective}`,\n    'Manter follow-up consistente',\n    'Demonstrar ROI claro',\n    'Tratar objeções proativamente'\n  ];\n}\n\nfunction getCompetitorInsights(data) {\n  return {\n    mainCompetitors: ['Zapier', 'Microsoft Power Automate', 'UiPath'],\n    differentiators: ['Implementação personalizada', 'Suporte em português', 'ROI garantido']\n  };\n}\n\nreturn results;"
+      },
+      "id": "js-vendas",
+      "name": "Processar Oportunidade",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-probability",
+              "leftValue": "={{ $json.closingProbability }}",
+              "rightValue": 70,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-high-probability",
+      "name": "Alta Probabilidade?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Acelerar processo para oportunidades de alta probabilidade\nconst oppData = $input.all()[0].json;\n\n// Preparar para transferência ao AEI (Agente de Entrega)\nconst handoffData = {\n  opportunityId: oppData.opportunityId,\n  leadId: oppData.leadId,\n  company: oppData.company,\n  email: oppData.email,\n  contact: oppData.contact,\n  estimatedValue: oppData.estimatedValue,\n  proposalData: oppData.proposalData,\n  priority: 'high',\n  readyForImplementation: true,\n  handoffReason: 'Alta probabilidade de fechamento',\n  nextActions: [\n    'Preparar ambiente de desenvolvimento',\n    'Agendar kick-off com cliente',\n    'Definir cronograma detalhado'\n  ],\n  timeline: oppData.proposalData.implementation?.duration || '4-8 semanas',\n  processedAt: new Date().toISOString()\n};\n\nconsole.log('Oportunidade de alta probabilidade preparada para AEI:', handoffData);\n\nreturn [{ json: {\n  status: 'ready_for_implementation',\n  message: 'Oportunidade preparada para transferência ao AEI',\n  handoffData: handoffData,\n  nextAgent: 'AEI - Agente de Entrega e Implementação'\n}}];"
+      },
+      "id": "prepare-for-aei",
+      "name": "Preparar para AEI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Continuar nutrição para oportunidades de probabilidade menor\nconst oppData = $input.all()[0].json;\n\n// Executar ações automatizadas\nconst automatedActions = oppData.automatedActions;\nconst executedActions = [];\n\nautomatedActions.forEach(action => {\n  // Simular execução das ações\n  const executedAction = {\n    type: action.type,\n    template: action.template,\n    scheduledFor: new Date(Date.now() + parseDelay(action.delay)).toISOString(),\n    subject: action.subject,\n    status: 'scheduled'\n  };\n  \n  executedActions.push(executedAction);\n  console.log(`Ação agendada: ${action.type} - ${action.subject}`);\n});\n\n// Agendar follow-up baseado no estágio\nconst followUpDelay = {\n  'initial_contact': 3,\n  'discovery_call': 7,\n  'demo_presentation': 5,\n  'proposal_generation': 3,\n  'negotiation': 2\n};\n\nconst nextFollowUp = new Date();\nnextFollowUp.setDate(nextFollowUp.getDate() + (followUpDelay[oppData.currentStage] || 7));\n\nfunction parseDelay(delay) {\n  const match = delay.match(/(\\d+)\\s*(hour|day|week)s?/);\n  if (!match) return 3600000; // 1 hora padrão\n  \n  const value = parseInt(match[1]);\n  const unit = match[2];\n  \n  switch (unit) {\n    case 'hour': return value * 3600000;\n    case 'day': return value * 86400000;\n    case 'week': return value * 604800000;\n    default: return 3600000;\n  }\n}\n\nreturn [{ json: {\n  status: 'nurturing_continued',\n  message: 'Processo de vendas continuado com ações automatizadas',\n  opportunityId: oppData.opportunityId,\n  currentStage: oppData.currentStage,\n  closingProbability: oppData.closingProbability,\n  executedActions: executedActions,\n  nextFollowUp: nextFollowUp.toISOString(),\n  salesInsights: oppData.salesInsights\n}}];"
+      },
+      "id": "continue-nurturing",
+      "name": "Continuar Nutrição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response-vendas",
+      "name": "Resposta AVC",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Processo de Vendas": {
+      "main": [
+        [
+          {
+            "node": "Processar Oportunidade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Oportunidade": {
+      "main": [
+        [
+          {
+            "node": "Alta Probabilidade?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alta Probabilidade?": {
+      "main": [
+        [
+          {
+            "node": "Preparar para AEI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Continuar Nutrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar para AEI": {
+      "main": [
+        [
+          {
+            "node": "Resposta AVC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Continuar Nutrição": {
+      "main": [
+        [
+          {
+            "node": "Resposta AVC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "3",
+      "name": "MoreFocus"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+      
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .slide-container {
+        width: 1280px;
+        min-height: 720px;
+        background: #f5f5f5;
+        color: #212121;
+        display: flex;
+        flex-direction: column;
+        padding: 30px;
+      }
+      
+      h1 {
+        font-size: 36px;
+        font-weight: 700;
+        color: #1a237e;
+        margin-bottom: 15px;
+        border-left: 5px solid #ff5722;
+        padding-left: 15px;
+      }
+      
+      .subtitle {
+        font-size: 18px;
+        font-weight: 400;
+        margin-bottom: 20px;
+        max-width: 800px;
+      }
+      
+      .highlight {
+        color: #ff5722;
+        font-weight: 500;
+      }
+      
+      .market-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 10px;
+      }
+      
+      .chart-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      .market-info {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .market-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      .market-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #1a237e;
+        margin-bottom: 5px;
+        display: flex;
+        align-items: center;
+      }
+      
+      .market-title i {
+        margin-right: 8px;
+        color: #42a5f5;
+      }
+      
+      .market-data {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+        font-size: 14px;
+      }
+      
+      .market-image {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <h1>Análise de Mercado Global</h1>
+      <div class="subtitle">
+        O mercado global de RPA está em acelerado crescimento, projetado para expandir de 
+        <span class="highlight">USD 2,9 bilhões em 2022</span> para 
+        <span class="highlight">USD 30,85 bilhões em 2030</span> (CAGR de 34,3%)
+      </div>
+      
+      <div class="market-grid">
+        <div class="chart-container">
+          <div style="height: 300px;">
+            <canvas id="marketChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="market-info">
+          <div class="market-card">
+            <div class="market-title"><i class="fas fa-flag"></i> Brasil</div>
+            <div class="market-data">
+              <span>78% das empresas já investiram em automação</span>
+              <span class="highlight">CAGR: 27,6%</span>
+            </div>
+            <p class="text-xs">Oportunidade: Soluções acessíveis com ROI claro</p>
+          </div>
+          
+          <div class="market-card">
+            <div class="market-title"><i class="fas fa-flag"></i> Argentina</div>
+            <div class="market-data">
+              <span>75% em estágios iniciais de transformação digital</span>
+              <span class="highlight">CAGR: 26,1%</span>
+            </div>
+            <p class="text-xs">Oportunidade: Soluções adaptadas à economia local</p>
+          </div>
+          
+          <div class="market-card">
+            <div class="market-title"><i class="fas fa-flag"></i> Estados Unidos</div>
+            <div class="market-data">
+              <span>Mercado maduro com alta adoção tecnológica</span>
+              <span class="highlight">CAGR: 27,6%</span>
+            </div>
+            <p class="text-xs">Oportunidade: Diferenciação por automação completa</p>
+          </div>
+          
+          <div class="market-card">
+            <div class="market-title"><i class="fas fa-flag"></i> Europa</div>
+            <div class="market-data">
+              <span>Foco em compliance (GDPR) e sustentabilidade</span>
+              <span class="highlight">CAGR: 41,5%</span>
+            </div>
+            <p class="text-xs">Oportunidade: Soluções GDPR-ready</p>
+          </div>
+          
+          <img src="/home/ubuntu/upload/search_images/OzlzUJJuGE5p.jpg" alt="Transformação Digital Global" class="market-image">
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('marketChart').getContext('2d');
+        
+        const marketChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['EUA', 'Europa', 'Brasil', 'Argentina'],
+            datasets: [{
+              label: 'Mercado Atual 2024 (USD milhões)',
+              data: [1300, 936, 400, 200],
+              backgroundColor: '#42a5f5',
+              borderColor: '#1a237e',
+              borderWidth: 1
+            }, {
+              label: 'Projeção 2030 (USD milhões)',
+              data: [11300, 6882, 3500, 1800],
+              backgroundColor: '#ff5722',
+              borderColor: '#1a237e',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Tamanho do Mercado de RPA por Região',
+                font: {
+                  size: 16
+                }
+              },
+              legend: {
+                position: 'bottom'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'USD Milhões'
+                }
+              }
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
+

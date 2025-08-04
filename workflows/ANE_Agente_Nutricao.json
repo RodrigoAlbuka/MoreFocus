@@ -1,0 +1,168 @@
+{
+  "name": "ANE - Agente de Nutrição e Engajamento",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nutricao",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-nutricao",
+      "name": "Webhook - Nutrição de Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ANE - Agente de Nutrição e Engajamento\n// Processa leads e define estratégia de nutrição\n\nconst inputData = $input.all();\nconst results = [];\n\nfor (const item of inputData) {\n  const data = item.json;\n  \n  // Validação dos dados de entrada\n  if (!data.email || !data.leadId) {\n    results.push({\n      json: {\n        status: 'error',\n        message: 'Dados obrigatórios faltando: email e leadId são necessários',\n        input: data\n      }\n    });\n    continue;\n  }\n  \n  // Determinar estratégia de nutrição baseada na classificação\n  let strategy = {};\n  const classification = data.classification || 'Cold Lead';\n  const score = data.score || 0;\n  \n  switch (classification) {\n    case 'Hot Lead':\n      strategy = {\n        sequence: 'hot_lead_sequence',\n        emailCount: 3,\n        frequency: 'daily',\n        content: [\n          {\n            day: 1,\n            subject: `${data.company || 'Sua empresa'} - Proposta Personalizada de Automação`,\n            template: 'hot_lead_proposal',\n            cta: 'Agendar Demo Executiva',\n            priority: 'high'\n          },\n          {\n            day: 2,\n            subject: 'Case de Sucesso: Como a [Empresa Similar] economizou 40% com automação',\n            template: 'case_study',\n            cta: 'Ver Mais Cases',\n            priority: 'high'\n          },\n          {\n            day: 3,\n            subject: 'Última chance: Demo exclusiva para sua empresa',\n            template: 'urgency_demo',\n            cta: 'Agendar Agora',\n            priority: 'urgent'\n          }\n        ]\n      };\n      break;\n      \n    case 'Warm Lead':\n      strategy = {\n        sequence: 'warm_lead_sequence',\n        emailCount: 5,\n        frequency: 'every_2_days',\n        content: [\n          {\n            day: 1,\n            subject: 'Bem-vindo! Como a automação pode transformar sua empresa',\n            template: 'welcome_warm',\n            cta: 'Baixar Guia Gratuito',\n            priority: 'normal'\n          },\n          {\n            day: 3,\n            subject: '5 Processos que toda empresa deveria automatizar',\n            template: 'educational_content',\n            cta: 'Ler Artigo Completo',\n            priority: 'normal'\n          },\n          {\n            day: 5,\n            subject: 'Calculadora ROI: Descubra quanto sua empresa pode economizar',\n            template: 'roi_calculator',\n            cta: 'Calcular Economia',\n            priority: 'normal'\n          },\n          {\n            day: 7,\n            subject: 'Webinar exclusivo: Automação para empresas do seu setor',\n            template: 'webinar_invite',\n            cta: 'Inscrever-se Grátis',\n            priority: 'normal'\n          },\n          {\n            day: 10,\n            subject: 'Pronto para dar o próximo passo?',\n            template: 'gentle_cta',\n            cta: 'Conversar com Especialista',\n            priority: 'normal'\n          }\n        ]\n      };\n      break;\n      \n    default: // Cold Lead\n      strategy = {\n        sequence: 'cold_lead_sequence',\n        emailCount: 7,\n        frequency: 'weekly',\n        content: [\n          {\n            day: 1,\n            subject: 'Obrigado pelo interesse em automação!',\n            template: 'welcome_cold',\n            cta: 'Acessar Recursos Gratuitos',\n            priority: 'low'\n          },\n          {\n            day: 7,\n            subject: 'Newsletter: Tendências em Automação - Janeiro 2024',\n            template: 'newsletter',\n            cta: 'Ler Newsletter',\n            priority: 'low'\n          },\n          {\n            day: 14,\n            subject: 'Dica da semana: Como identificar processos para automatizar',\n            template: 'weekly_tip',\n            cta: 'Ver Mais Dicas',\n            priority: 'low'\n          },\n          {\n            day: 21,\n            subject: 'Case de sucesso: Startup economiza 60% com automação simples',\n            template: 'case_study_simple',\n            cta: 'Ler Case Completo',\n            priority: 'low'\n          },\n          {\n            day: 28,\n            subject: 'Checklist gratuito: 10 sinais de que sua empresa precisa de automação',\n            template: 'checklist',\n            cta: 'Baixar Checklist',\n            priority: 'low'\n          },\n          {\n            day: 35,\n            subject: 'Convite especial: Consultoria gratuita de 15 minutos',\n            template: 'free_consultation',\n            cta: 'Agendar Consultoria',\n            priority: 'normal'\n          },\n          {\n            day: 42,\n            subject: 'Ainda está conosco? Vamos manter contato!',\n            template: 'retention',\n            cta: 'Continuar Recebendo Conteúdo',\n            priority: 'low'\n          }\n        ]\n      };\n  }\n  \n  // Personalização baseada no setor\n  if (data.sector) {\n    strategy.sectorPersonalization = {\n      sector: data.sector,\n      customContent: getSectorSpecificContent(data.sector)\n    };\n  }\n  \n  // Configurar tracking e analytics\n  const trackingData = {\n    leadId: data.leadId,\n    campaignId: `ANE_${classification.replace(' ', '_')}_${Date.now()}`,\n    source: data.source || 'unknown',\n    utmSource: 'morefocus',\n    utmMedium: 'email',\n    utmCampaign: strategy.sequence\n  };\n  \n  results.push({\n    json: {\n      status: 'success',\n      leadId: data.leadId,\n      company: data.company,\n      email: data.email,\n      contact: data.contact,\n      classification: classification,\n      score: score,\n      strategy: strategy,\n      tracking: trackingData,\n      scheduledEmails: strategy.content.length,\n      estimatedDuration: `${strategy.content.length * (strategy.frequency === 'daily' ? 1 : strategy.frequency === 'every_2_days' ? 2 : 7)} dias`,\n      processedAt: new Date().toISOString(),\n      agent: 'ANE - Agente de Nutrição e Engajamento'\n    }\n  });\n}\n\n// Função auxiliar para conteúdo específico por setor\nfunction getSectorSpecificContent(sector) {\n  const sectorContent = {\n    'technology': {\n      focus: 'Automação de DevOps e CI/CD',\n      caseStudy: 'Como uma startup de SaaS automatizou deploys e reduziu bugs em 80%'\n    },\n    'finance': {\n      focus: 'Automação de processos financeiros e compliance',\n      caseStudy: 'Fintech automatiza reconciliação bancária e economiza 120 horas/mês'\n    },\n    'healthcare': {\n      focus: 'Automação de prontuários e agendamentos',\n      caseStudy: 'Clínica automatiza agendamentos e reduz no-shows em 50%'\n    },\n    'manufacturing': {\n      focus: 'Automação de supply chain e qualidade',\n      caseStudy: 'Indústria automatiza controle de qualidade e aumenta eficiência em 35%'\n    }\n  };\n  \n  return sectorContent[sector.toLowerCase()] || {\n    focus: 'Automação de processos administrativos',\n    caseStudy: 'Empresa automatiza processos manuais e economiza 40% do tempo'\n  };\n}\n\nreturn results;"
+      },
+      "id": "js-nutricao",
+      "name": "Definir Estratégia de Nutrição",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "high-priority",
+              "leftValue": "={{ $json.strategy.content[0].priority }}",
+              "rightValue": "high",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-high-priority",
+      "name": "É Alta Prioridade?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enviar primeiro email imediatamente para leads de alta prioridade\nconst leadData = $input.all()[0].json;\nconst firstEmail = leadData.strategy.content[0];\n\n// Simular envio de email (em produção, integraria com Mailgun/SendGrid)\nconst emailPayload = {\n  to: leadData.email,\n  subject: firstEmail.subject,\n  template: firstEmail.template,\n  variables: {\n    company: leadData.company,\n    contact: leadData.contact,\n    leadId: leadData.leadId,\n    cta_url: `https://morefocus.com/cta?campaign=${leadData.tracking.campaignId}&lead=${leadData.leadId}`\n  },\n  tracking: leadData.tracking,\n  priority: firstEmail.priority,\n  scheduledFor: 'immediate'\n};\n\nconsole.log('Email de alta prioridade enviado:', emailPayload);\n\nreturn [{ json: {\n  status: 'email_sent',\n  emailType: 'immediate_high_priority',\n  leadId: leadData.leadId,\n  emailPayload: emailPayload,\n  nextEmailIn: leadData.strategy.frequency === 'daily' ? '24 horas' : '48 horas'\n}}];"
+      },
+      "id": "send-immediate-email",
+      "name": "Enviar Email Imediato",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Agendar sequência de emails para leads de prioridade normal/baixa\nconst leadData = $input.all()[0].json;\nconst strategy = leadData.strategy;\n\n// Simular agendamento de emails\nconst scheduledEmails = [];\nlet currentDate = new Date();\n\nstrategy.content.forEach((email, index) => {\n  const scheduleDate = new Date(currentDate);\n  scheduleDate.setDate(scheduleDate.getDate() + email.day);\n  \n  scheduledEmails.push({\n    emailIndex: index + 1,\n    scheduledFor: scheduleDate.toISOString(),\n    subject: email.subject,\n    template: email.template,\n    cta: email.cta,\n    priority: email.priority,\n    to: leadData.email,\n    variables: {\n      company: leadData.company,\n      contact: leadData.contact,\n      leadId: leadData.leadId\n    }\n  });\n});\n\nconsole.log(`${scheduledEmails.length} emails agendados para ${leadData.email}`);\n\nreturn [{ json: {\n  status: 'emails_scheduled',\n  leadId: leadData.leadId,\n  totalEmails: scheduledEmails.length,\n  scheduledEmails: scheduledEmails,\n  sequence: strategy.sequence,\n  estimatedDuration: leadData.estimatedDuration\n}}];"
+      },
+      "id": "schedule-email-sequence",
+      "name": "Agendar Sequência",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response-nutricao",
+      "name": "Resposta ANE",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook - Nutrição de Lead": {
+      "main": [
+        [
+          {
+            "node": "Definir Estratégia de Nutrição",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Definir Estratégia de Nutrição": {
+      "main": [
+        [
+          {
+            "node": "É Alta Prioridade?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É Alta Prioridade?": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email Imediato",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Sequência",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Email Imediato": {
+      "main": [
+        [
+          {
+            "node": "Resposta ANE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Sequência": {
+      "main": [
+        [
+          {
+            "node": "Resposta ANE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",\n      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "2",
+      "name": "MoreFocus"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
+

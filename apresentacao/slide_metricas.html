@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+      
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      
+      .slide-container {
+        width: 1280px;
+        min-height: 720px;
+        background: #f5f5f5;
+        color: #212121;
+        display: flex;
+        flex-direction: column;
+        padding: 30px;
+      }
+      
+      h1 {
+        font-size: 36px;
+        font-weight: 700;
+        color: #1a237e;
+        margin-bottom: 15px;
+        border-left: 5px solid #ff5722;
+        padding-left: 15px;
+      }
+      
+      .subtitle {
+        font-size: 18px;
+        font-weight: 400;
+        margin-bottom: 20px;
+        max-width: 800px;
+      }
+      
+      .highlight {
+        color: #ff5722;
+        font-weight: 500;
+      }
+      
+      .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 10px;
+      }
+      
+      .chart-container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      .metrics-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .metrics-section {
+        background-color: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      
+      .section-title {
+        font-size: 18px;
+        font-weight: 500;
+        color: #1a237e;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+      }
+      
+      .section-title i {
+        margin-right: 8px;
+        color: #42a5f5;
+      }
+      
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      
+      .metric-item {
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        border-radius: 4px;
+        background-color: #f5f5f5;
+      }
+      
+      .metric-name {
+        font-size: 14px;
+        color: #212121;
+      }
+      
+      .metric-value {
+        font-size: 18px;
+        font-weight: 500;
+        color: #1a237e;
+      }
+      
+      .metric-value.positive {
+        color: #4caf50;
+      }
+      
+      .metric-value.highlight {
+        color: #ff5722;
+      }
+      
+      .dashboard-image {
+        width: 100%;
+        height: 200px;
+        object-fit: contain;
+        border-radius: 8px;
+        margin-top: 15px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="slide-container">
+      <h1>Métricas de Sucesso</h1>
+      <div class="subtitle">
+        KPIs financeiros e operacionais que demonstram a viabilidade do modelo de negócio para atingir 
+        <span class="highlight">R$ 100.000/mês</span> com apenas um funcionário.
+      </div>
+      
+      <div class="content-grid">
+        <div class="chart-container">
+          <div style="height: 300px;">
+            <canvas id="revenueChart"></canvas>
+          </div>
+          
+          <div style="height: 150px; margin-top: 15px;">
+            <canvas id="breakdownChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="metrics-container">
+          <div class="metrics-section">
+            <div class="section-title">
+              <i class="fas fa-chart-line"></i> KPIs Financeiros
+            </div>
+            <div class="metrics-grid">
+              <div class="metric-item">
+                <div class="metric-name">Customer Acquisition Cost</div>
+                <div class="metric-value highlight">&lt;USD 500</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Lifetime Value</div>
+                <div class="metric-value highlight">&gt;USD 5.000</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">LTV/CAC Ratio</div>
+                <div class="metric-value positive">&gt;10:1</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Margem Líquida</div>
+                <div class="metric-value positive">&gt;70%</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Payback Period</div>
+                <div class="metric-value">4 meses</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">ROI 18 meses</div>
+                <div class="metric-value positive">1.370%</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="metrics-section">
+            <div class="section-title">
+              <i class="fas fa-tachometer-alt"></i> KPIs Operacionais
+            </div>
+            <div class="metrics-grid">
+              <div class="metric-item">
+                <div class="metric-name">System Uptime</div>
+                <div class="metric-value">99.9%</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Customer Satisfaction</div>
+                <div class="metric-value">&gt;90%</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Net Promoter Score</div>
+                <div class="metric-value">&gt;50</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Churn Rate</div>
+                <div class="metric-value">&lt;5% mensal</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Lead Conversion Rate</div>
+                <div class="metric-value">&gt;2%</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-name">Automação Rate</div>
+                <div class="metric-value highlight">&gt;95%</div>
+              </div>
+            </div>
+          </div>
+          
+          <img src="/home/ubuntu/upload/search_images/i2UUIKAGyLbc.png" alt="Dashboard de Métricas" class="dashboard-image">
+        </div>
+      </div>
+    </div>
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Revenue Projection Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        
+        const revenueChart = new Chart(revenueCtx, {
+          type: 'line',
+          data: {
+            labels: ['M1', 'M3', 'M6', 'M9', 'M12', 'M15', 'M18'],
+            datasets: [{
+              label: 'Receita Mensal (USD)',
+              data: [1000, 8000, 20000, 40000, 70000, 100000, 130000],
+              backgroundColor: 'rgba(66, 165, 245, 0.2)',
+              borderColor: '#42a5f5',
+              borderWidth: 2,
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Projeção de Receita (18 meses)',
+                font: {
+                  size: 16
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `USD ${context.raw.toLocaleString()}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'USD'
+                }
+              }
+            }
+          }
+        });
+        
+        // Revenue Breakdown Chart
+        const breakdownCtx = document.getElementById('breakdownChart').getContext('2d');
+        
+        const breakdownChart = new Chart(breakdownCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Implementação (40%)', 'Suporte Mensal (50%)', 'Upsells (10%)'],
+            datasets: [{
+              data: [40, 50, 10],
+              backgroundColor: [
+                '#1a237e',
+                '#42a5f5',
+                '#ff5722'
+              ],
+              borderColor: '#ffffff',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Estrutura de Receita',
+                font: {
+                  size: 14
+                }
+              },
+              legend: {
+                position: 'bottom',
+                labels: {
+                  boxWidth: 12,
+                  font: {
+                    size: 10
+                  }
+                }
+              }
+            }
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
+
