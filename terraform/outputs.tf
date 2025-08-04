@@ -98,7 +98,7 @@ output "INSTANCE_STATUS" {
     instance_state    = aws_instance.morefocus.instance_state
     availability_zone = aws_instance.morefocus.availability_zone
     instance_type     = aws_instance.morefocus.instance_type
-    ami_id           = aws_instance.morefocus.ami
+    ami_id            = aws_instance.morefocus.ami
   }
 }
 
@@ -106,12 +106,12 @@ output "INSTANCE_STATUS" {
 output "ESTIMATED_MONTHLY_COST" {
   description = "Estimated monthly cost breakdown"
   value = {
-    ec2_instance  = var.INSTANCE_TYPE == "t3.micro" ? "Free Tier (750 hours/month)" : "~$8-20/month"
-    ebs_storage   = var.EBS_VOLUME_SIZE <= 30 ? "Free Tier (30GB)" : "~$0.10/GB/month"
-    elastic_ip    = var.USE_ELASTIC_IP ? "$3.65/month" : "Free (dynamic IP)"
-    s3_storage    = "~$0.023/GB/month"
-    data_transfer = "Free Tier (1GB/month out)"
-    cloudwatch    = var.ENABLE_CLOUDWATCH_MONITORING ? "~$0.50/month" : "Free"
+    ec2_instance   = var.INSTANCE_TYPE == "t3.micro" ? "Free Tier (750 hours/month)" : "~$8-20/month"
+    ebs_storage    = var.EBS_VOLUME_SIZE <= 30 ? "Free Tier (30GB)" : "~$0.10/GB/month"
+    elastic_ip     = var.USE_ELASTIC_IP ? "$3.65/month" : "Free (dynamic IP)"
+    s3_storage     = "~$0.023/GB/month"
+    data_transfer  = "Free Tier (1GB/month out)"
+    cloudwatch     = var.ENABLE_CLOUDWATCH_MONITORING ? "~$0.50/month" : "Free"
     total_estimate = var.INSTANCE_TYPE == "t3.micro" && !var.USE_ELASTIC_IP && !var.ENABLE_CLOUDWATCH_MONITORING ? "~$2-5/month" : "~$10-25/month"
   }
 }
@@ -135,12 +135,12 @@ output "NEXT_STEPS" {
 output "TROUBLESHOOTING" {
   description = "Troubleshooting information"
   value = {
-    logs_location    = "/var/log/user-data.log"
-    status_file      = "/opt/${var.PROJECT_NAME}/status.json"
-    docker_logs      = "docker logs morefocus-n8n"
-    service_restart  = "cd /opt/${var.PROJECT_NAME} && docker-compose restart"
-    backup_script    = "/opt/${var.PROJECT_NAME}/scripts/backup.sh"
-    health_check     = "/opt/${var.PROJECT_NAME}/scripts/health_check.sh"
+    logs_location   = "/var/log/user-data.log"
+    status_file     = "/opt/${var.PROJECT_NAME}/status.json"
+    docker_logs     = "docker logs morefocus-n8n"
+    service_restart = "cd /opt/${var.PROJECT_NAME} && docker-compose restart"
+    backup_script   = "/opt/${var.PROJECT_NAME}/scripts/backup.sh"
+    health_check    = "/opt/${var.PROJECT_NAME}/scripts/health_check.sh"
   }
 }
 
@@ -148,13 +148,13 @@ output "TROUBLESHOOTING" {
 output "PROJECT_INFO" {
   description = "Project configuration summary"
   value = {
-    project_name = var.PROJECT_NAME
-    environment  = var.ENVIRONMENT
-    aws_region   = var.AWS_REGION
-    deployment_date = timestamp()
+    project_name      = var.PROJECT_NAME
+    environment       = var.ENVIRONMENT
+    aws_region        = var.AWS_REGION
+    deployment_date   = timestamp()
     terraform_version = ">=1.0"
     database_provider = "Supabase"
-    ssl_enabled = var.SUPABASE_SSL
+    ssl_enabled       = var.SUPABASE_SSL
   }
 }
 

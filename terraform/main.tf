@@ -14,8 +14,8 @@ terraform {
 
 # Provider AWS
 provider "aws" {
-  region = var.AWS_REGION
-  
+  region = "us-east-2"
+
   default_tags {
     tags = {
       Project     = "MoreFocus"
@@ -37,7 +37,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-22.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 
   filter {
@@ -111,18 +111,18 @@ resource "aws_security_group" "morefocus_ec2" {
 resource "aws_instance" "morefocus" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.INSTANCE_TYPE
-  key_name              = aws_key_pair.morefocus.key_name
+  key_name               = aws_key_pair.morefocus.key_name
   vpc_security_group_ids = [aws_security_group.morefocus_ec2.id]
-  
+
   # User data com variáveis padronizadas
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    N8N_USER           = var.N8N_USER
-    N8N_PASSWORD       = var.N8N_PASSWORD
-    SUPABASE_HOST      = var.SUPABASE_HOST
-    SUPABASE_PASSWORD  = var.SUPABASE_PASSWORD
-    DB_NAME            = var.DB_NAME
-    DB_USER            = var.DB_USER
-    PROJECT_NAME       = var.PROJECT_NAME
+    N8N_USER          = var.N8N_USER
+    N8N_PASSWORD      = var.N8N_PASSWORD
+    SUPABASE_HOST     = var.SUPABASE_HOST
+    SUPABASE_PASSWORD = var.SUPABASE_PASSWORD
+    DB_NAME           = var.DB_NAME
+    DB_USER           = var.DB_USER
+    PROJECT_NAME      = var.PROJECT_NAME
   }))
 
   # EBS otimizado para free tier
@@ -130,7 +130,7 @@ resource "aws_instance" "morefocus" {
     volume_type = "gp3"
     volume_size = var.EBS_VOLUME_SIZE
     encrypted   = true
-    
+
     tags = {
       Name = "${var.PROJECT_NAME}-root-volume"
     }
@@ -145,10 +145,10 @@ resource "aws_instance" "morefocus" {
 # Elastic IP (opcional)
 resource "aws_eip" "morefocus" {
   count = var.USE_ELASTIC_IP ? 1 : 0
-  
+
   instance = aws_instance.morefocus.id
   domain   = "vpc"
-  
+
   tags = {
     Name = "${var.PROJECT_NAME}-eip"
   }
@@ -157,7 +157,7 @@ resource "aws_eip" "morefocus" {
 # S3 Bucket para backups e assets
 resource "aws_s3_bucket" "morefocus" {
   bucket = "${var.PROJECT_NAME}-${random_id.bucket_suffix.hex}"
-  
+
   tags = {
     Name = "${var.PROJECT_NAME}-storage"
   }
@@ -196,10 +196,10 @@ resource "aws_s3_bucket_public_access_block" "morefocus" {
 # CloudWatch Log Group
 resource "aws_cloudwatch_log_group" "morefocus" {
   count = var.ENABLE_CLOUDWATCH_MONITORING ? 1 : 0
-  
+
   name              = "/aws/ec2/${var.PROJECT_NAME}"
   retention_in_days = var.BACKUP_RETENTION_DAYS
-  
+
   tags = {
     Name = "${var.PROJECT_NAME}-logs"
   }
@@ -223,39 +223,48 @@ resource "aws_iam_role" "morefocus_ec2" {
   })
 }
 
+locals {
+  base_statements = [
+    {
+      Effect = "Allow"
+      Action = [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ]
+      Resource = "${aws_s3_bucket.morefocus.arn}/*"
+    },
+    {
+      Effect = "Allow"
+      Action = [
+        "s3:ListBucket"
+      ]
+      Resource = aws_s3_bucket.morefocus.arn
+    }
+  ]
+
+  cloudwatch_statements = var.ENABLE_CLOUDWATCH_MONITORING ? [
+    {
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "${aws_cloudwatch_log_group.morefocus[0].arn}:*"
+    }
+  ] : []
+
+  combined_statements = concat(local.base_statements, local.cloudwatch_statements)
+}
+
 resource "aws_iam_role_policy" "morefocus_ec2" {
   name = "${var.PROJECT_NAME}-ec2-policy"
   role = aws_iam_role.morefocus_ec2.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
-        ]
-        Resource = "${aws_s3_bucket.morefocus.arn}/*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket"
-        ]
-        Resource = aws_s3_bucket.morefocus.arn
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogStreams"
-        ]
-        Resource = var.ENABLE_CLOUDWATCH_MONITORING ? "${aws_cloudwatch_log_group.morefocus[0].arn}:*" : ""
-      }
-    ]
+    Statement = local.combined_statements
   })
 }
 
@@ -263,4 +272,3 @@ resource "aws_iam_instance_profile" "morefocus_ec2" {
   name = "${var.PROJECT_NAME}-ec2-profile"
   role = aws_iam_role.morefocus_ec2.name
 }
-

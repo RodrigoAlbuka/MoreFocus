@@ -21,8 +21,8 @@ variable "PROJECT_NAME" {
 variable "INSTANCE_TYPE" {
   description = "EC2 instance type"
   type        = string
-  default     = "t3.micro"  # Free tier eligible
-  
+  default     = "t3.micro" # Free tier eligible
+
   validation {
     condition = contains([
       "t3.micro", "t3.small", "t3.medium",
@@ -35,8 +35,8 @@ variable "INSTANCE_TYPE" {
 variable "EBS_VOLUME_SIZE" {
   description = "Size of the EBS root volume in GB"
   type        = number
-  default     = 20  # Free tier: up to 30GB
-  
+  default     = 20 # Free tier: up to 30GB
+
   validation {
     condition     = var.EBS_VOLUME_SIZE >= 8 && var.EBS_VOLUME_SIZE <= 100
     error_message = "EBS volume size must be between 8 and 100 GB."
@@ -46,8 +46,8 @@ variable "EBS_VOLUME_SIZE" {
 variable "SSH_PUBLIC_KEY" {
   description = "SSH public key for EC2 access"
   type        = string
-  default     = ""
-  
+  default     = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCO6jORNS7zyxgEQIyAB2EauDWVAq6es2yUbZvCRtcrwewQE6GCrzCEr/AWfyKRqcI3+As2T8uMdU/MA/iRY8qliVU4oed7D23MhaV13kozZSR+OmMCw3lH1ejrvJPLXl7i7Q49HToxujS9dwDkta3yiBt4os44p0O2m/O7TYWInXiLhqtq03XMqSFPRFEytP3oNCGHPqLFR/Cr5SXnDDTNZC333OWudMKIqTZDO83HIMq5DlvcnCcuzStC1XtPsQsYMfyBc2Xshwxw2Mgb8BTkhy361NabnQ3caGJdnUgIkV/6ZQB3MDrlW5oAzdOawDh5QBE06f2e5ma5wrbVBfv7Lu/No8XuHwr9YVJuuj6eOA9iC//g74vZvC3zgjm2PtsIAsnNpI+qDwvcyb+X1vn236uLzVm7l0lGR1gVU0j+M/461w54vr3f8gPv3N2ftZ1LRBDqucBcVFOuaR+nGO5iz01+thZmGf9w5rHlohJBxGN8QgjqfsfhBonLbDRaNEFQB1vcQJJwlq6nluXp9+ytt121R+Bh6+6MXzS6T5igLrg2sDQOqEGdYcgFwQOU4ro/WLQqWV4KSE//zpG7cHsmJ1xCHT06RZSrdmauWwMyT0RzpKWWi86h+aAH1W31CeI4RSN9rTqewTqaI4ar9R4Fv7/ooGhwQrei2QjhMvQC3w== cloudshell-user@ip-10-131-14-245.us-east-2.compute.internal"
+
   validation {
     condition     = length(var.SSH_PUBLIC_KEY) > 0
     error_message = "SSH public key is required."
@@ -57,13 +57,13 @@ variable "SSH_PUBLIC_KEY" {
 variable "USE_RDS" {
   description = "Whether to use RDS PostgreSQL instead of SQLite"
   type        = bool
-  default     = false  # SQLite para free tier
+  default     = false # SQLite para free tier
 }
 
 variable "USE_ELASTIC_IP" {
   description = "Whether to allocate an Elastic IP"
   type        = bool
-  default     = false  # Evitar custos extras
+  default     = false # Evitar custos extras
 }
 
 # Database variables
@@ -83,8 +83,8 @@ variable "DB_PASSWORD" {
   description = "Database password"
   type        = string
   sensitive   = true
-  default     = "ChangeThisPassword123!"
-  
+  default     = "h88b2wQPK2q-ry+"
+
   validation {
     condition     = length(var.DB_PASSWORD) >= 8
     error_message = "Database password must be at least 8 characters long."
@@ -94,7 +94,7 @@ variable "DB_PASSWORD" {
 variable "DB_HOST" {
   description = "Database host (for external databases like Supabase)"
   type        = string
-  default     = "db.czlelqdsypwtwfmasvik.supabase.co"
+  default     = "db.zaphveadgevkzqcvtkes.supabase.co"
 }
 
 variable "DB_PORT" {
@@ -115,7 +115,7 @@ variable "N8N_PASSWORD" {
   type        = string
   sensitive   = true
   default     = "ChangeThisPassword123!"
-  
+
   validation {
     condition     = length(var.N8N_PASSWORD) >= 8
     error_message = "n8n password must be at least 8 characters long."
@@ -182,7 +182,7 @@ variable "USE_SSL" {
 variable "ENABLE_CLOUDWATCH_MONITORING" {
   description = "Enable detailed CloudWatch monitoring"
   type        = bool
-  default     = false  # Evitar custos extras no free tier
+  default     = false # Evitar custos extras no free tier
 }
 
 # Backup configuration
@@ -215,7 +215,7 @@ variable "MAX_INSTANCES" {
 variable "ALLOWED_SSH_CIDRS" {
   description = "CIDR blocks allowed for SSH access"
   type        = list(string)
-  default     = ["0.0.0.0/0"]  # Restringir em produção
+  default     = ["0.0.0.0/0"] # Restringir em produção
 }
 
 variable "ALLOWED_HTTP_CIDRS" {
@@ -260,14 +260,14 @@ variable "ENABLE_ELASTICSEARCH" {
 variable "ENABLE_VPC" {
   description = "Create custom VPC instead of using default"
   type        = bool
-  default     = false  # Usar VPC padrão para simplicidade
+  default     = false # Usar VPC padrão para simplicidade
 }
 
 # Supabase specific variables
 variable "SUPABASE_HOST" {
   description = "Supabase database host"
   type        = string
-  default     = "db.czlelqdsypwtwfmasvik.supabase.co"
+  default     = "db.zaphveadgevkzqcvtkes.supabase.co"
 }
 
 variable "SUPABASE_PASSWORD" {
@@ -280,6 +280,6 @@ variable "SUPABASE_PASSWORD" {
 variable "SUPABASE_SSL" {
   description = "Enable SSL for Supabase connection"
   type        = bool
-  default     = true
+  default     = false
 }
 
