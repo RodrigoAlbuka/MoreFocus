@@ -1,0 +1,157 @@
+# MoreFocus - Docker Compose para Produção
+# Configuração otimizada para deploy em qualquer servidor
+
+version: '3.8'
+
+services:
+  morefocus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: morefocus:latest
+    container_name: morefocus-app
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+      - "80:5678"  # Mapear porta 80 para facilitar acesso
+    environment:
+      # Configuração básica (OBRIGATÓRIO)
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-ChangeThisPassword123!}
+      
+      # Configuração de rede
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      
+      # Configuração regional
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      
+      # Banco de dados (SQLite por padrão)
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - DB_SQLITE_DATABASE=/home/n8n/.n8n/database.sqlite
+      
+      # Configuração PostgreSQL (se usar)
+      - DB_POSTGRESDB_HOST=${DB_HOST:-}
+      - DB_POSTGRESDB_PORT=${DB_PORT:-5432}
+      - DB_POSTGRESDB_DATABASE=${DB_NAME:-postgres}
+      - DB_POSTGRESDB_USER=${DB_USER:-postgres}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD:-}
+      - DB_POSTGRESDB_SSL=${DB_SSL:-false}
+      
+      # Configuração de performance
+      - N8N_LOG_LEVEL=${LOG_LEVEL:-info}
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      
+      # Integrações externas
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY:-}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN:-}
+      - HUBSPOT_ACCESS_TOKEN=${HUBSPOT_ACCESS_TOKEN:-}
+      - GA_MEASUREMENT_ID=${GA_MEASUREMENT_ID:-}
+      - GA_API_SECRET=${GA_API_SECRET:-}
+    
+    volumes:
+      # Persistência de dados
+      - morefocus_data:/home/n8n/.n8n
+      
+      # Backups (opcional)
+      - ./backups:/opt/morefocus/backups
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+    
+    # Configurações de segurança
+    security_opt:
+      - no-new-privileges:true
+    
+    # Usuário não-root
+    user: "1000:1000"
+
+  # Nginx para SSL e proxy reverso (opcional)
+  nginx:
+    image: nginx:alpine
+    container_name: morefocus-nginx
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - morefocus
+    profiles:
+      - ssl  # Ativar apenas se precisar de SSL
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.1'
+
+  # PostgreSQL local (opcional)
+  postgres:
+    image: postgres:15-alpine
+    container_name: morefocus-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME:-morefocus}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    profiles:
+      - postgres  # Ativar apenas se não usar Supabase
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.3'
+
+  # Redis para cache (opcional)
+  redis:
+    image: redis:7-alpine
+    container_name: morefocus-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    profiles:
+      - redis  # Ativar apenas se precisar de cache
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+    command: redis-server --maxmemory 100mb --maxmemory-policy allkeys-lru
+
+volumes:
+  morefocus_data:
+    driver: local
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: morefocus-network
+
