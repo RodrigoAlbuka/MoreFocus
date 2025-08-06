@@ -1,0 +1,80 @@
+# MoreFocus - Docker Compose para Ambientes com Limitações
+# Configuração otimizada para sandboxes e ambientes com restrições de iptables
+
+version: '3.8'
+
+services:
+  morefocus:
+    image: n8nio/n8n:latest
+    container_name: morefocus-app
+    restart: unless-stopped
+    network_mode: host  # Contorna limitações de iptables
+    environment:
+      # Configuração básica (OBRIGATÓRIO)
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-MoreFocus2024!}
+      
+      # Configuração de rede
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      
+      # Configuração regional
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      
+      # Banco de dados (SQLite por padrão)
+      - DB_TYPE=${DB_TYPE:-sqlite}
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+      
+      # Configuração PostgreSQL (se usar)
+      - DB_POSTGRESDB_HOST=${DB_HOST:-}
+      - DB_POSTGRESDB_PORT=${DB_PORT:-5432}
+      - DB_POSTGRESDB_DATABASE=${DB_NAME:-postgres}
+      - DB_POSTGRESDB_USER=${DB_USER:-postgres}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD:-}
+      - DB_POSTGRESDB_SSL=${DB_SSL:-false}
+      
+      # Configuração de performance
+      - N8N_LOG_LEVEL=${LOG_LEVEL:-info}
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_RUNNERS_ENABLED=true
+    
+    volumes:
+      # Persistência de dados
+      - morefocus_data:/home/node/.n8n
+      
+      # Workflows (read-only)
+      - ./workflows:/home/node/.n8n/workflows:ro
+      
+      # Backups (opcional)
+      - ./backups:/opt/morefocus/backups
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+volumes:
+  morefocus_data:
+    driver: local
+
+networks:
+  default:
+    name: morefocus-network
+

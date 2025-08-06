@@ -44,6 +44,20 @@ if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/
     exit 1
 fi
 
+# Detectar limitações de ambiente
+log_info "Detectando limitações do ambiente..."
+
+# Testar se Docker funciona normalmente
+if docker run --rm alpine:latest echo "test" > /dev/null 2>&1; then
+    DOCKER_MODE="normal"
+    COMPOSE_FILE="docker-compose.production.yml"
+    log_success "Ambiente Docker normal detectado"
+else
+    DOCKER_MODE="limited"
+    COMPOSE_FILE="docker-compose.sandbox.yml"
+    log_warning "Limitações de rede detectadas, usando modo compatibilidade"
+fi
+
 # Detectar comando do Docker Compose
 if command -v docker-compose &> /dev/null; then
     DOCKER_COMPOSE="docker-compose"
@@ -54,8 +68,9 @@ fi
 log_success "Docker e Docker Compose encontrados!"
 
 # Verificar se está no diretório correto
-if [ ! -f "Dockerfile" ] || [ ! -f "docker-compose.production.yml" ]; then
+if [ ! -f "Dockerfile" ] || [ ! -f "$COMPOSE_FILE" ]; then
     log_error "Execute este script no diretório raiz do projeto MoreFocus"
+    log_info "Arquivos necessários: Dockerfile, $COMPOSE_FILE"
     exit 1
 fi
 
@@ -146,15 +161,17 @@ fi
 
 # Parar containers existentes
 log_info "Parando containers existentes..."
-$DOCKER_COMPOSE -f docker-compose.production.yml down 2>/dev/null || true
+$DOCKER_COMPOSE -f $COMPOSE_FILE down 2>/dev/null || true
 
-# Build da imagem
-log_info "Construindo imagem Docker..."
-docker build -t morefocus:latest .
+# Build da imagem (apenas se não for modo limitado)
+if [ "$DOCKER_MODE" = "normal" ]; then
+    log_info "Construindo imagem Docker..."
+    docker build -t morefocus:latest .
+fi
 
 # Iniciar serviços
 log_info "Iniciando serviços..."
-$DOCKER_COMPOSE -f docker-compose.production.yml up -d $PROFILES
+$DOCKER_COMPOSE -f $COMPOSE_FILE up -d $PROFILES
 
 # Aguardar inicialização
 log_info "Aguardando inicialização..."
@@ -207,9 +224,13 @@ if docker ps | grep -q morefocus-app; then
     
     echo "🛠️  Comandos úteis:"
     echo "  - Ver logs: docker logs -f morefocus-app"
-    echo "  - Parar: $DOCKER_COMPOSE -f docker-compose.production.yml down"
-    echo "  - Reiniciar: $DOCKER_COMPOSE -f docker-compose.production.yml restart"
-    echo "  - Atualizar: docker pull morefocus:latest && $DOCKER_COMPOSE -f docker-compose.production.yml up -d"
+    echo "  - Parar: $DOCKER_COMPOSE -f $COMPOSE_FILE down"
+    echo "  - Reiniciar: $DOCKER_COMPOSE -f $COMPOSE_FILE restart"
+    if [ "$DOCKER_MODE" = "normal" ]; then
+        echo "  - Atualizar: docker pull morefocus:latest && $DOCKER_COMPOSE -f $COMPOSE_FILE up -d"
+    else
+        echo "  - Atualizar: docker pull n8nio/n8n:latest && $DOCKER_COMPOSE -f $COMPOSE_FILE up -d"
+    fi
     echo ""
     
     # Salvar informações
@@ -236,8 +257,10 @@ $(docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}")
 
 Comandos:
 - Logs: docker logs -f morefocus-app
-- Parar: $DOCKER_COMPOSE -f docker-compose.production.yml down
-- Reiniciar: $DOCKER_COMPOSE -f docker-compose.production.yml restart
+- Parar: $DOCKER_COMPOSE -f $COMPOSE_FILE down
+- Reiniciar: $DOCKER_COMPOSE -f $COMPOSE_FILE restart
+- Modo: $DOCKER_MODE
+- Compose: $COMPOSE_FILE
 EOF
     
     log_success "Informações salvas em: deploy-info.txt"
@@ -248,7 +271,7 @@ else
     echo "🔍 Diagnóstico:"
     echo "  - Logs: docker logs morefocus-app"
     echo "  - Status: docker ps -a"
-    echo "  - Compose: $DOCKER_COMPOSE -f docker-compose.production.yml logs"
+    echo "  - Diagnóstico: $DOCKER_COMPOSE -f $COMPOSE_FILE logs"
     exit 1
 fi
 

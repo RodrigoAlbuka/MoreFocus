@@ -20,7 +20,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 git clone https://github.com/RodrigoAlbuka/MoreFocus.git
 cd MoreFocus
 
-# Executar deploy
+# Executar deploy (detecta automaticamente limitações)
 ./docker-deploy.sh
 ```
 
@@ -31,22 +31,22 @@ cd MoreFocus
 
 ## 📋 Opções de Deploy
 
-### Opção 1: Deploy Básico (SQLite)
+### Opção 1: Deploy Básico (Ambiente Normal)
 ```bash
-# Apenas MoreFocus com SQLite
+# Usa docker-compose.production.yml
 docker-compose -f docker-compose.production.yml up -d
 ```
 
-### Opção 2: Deploy com PostgreSQL
+### Opção 2: Deploy Compatibilidade (Ambientes Limitados)
+```bash
+# Usa docker-compose.sandbox.yml (network_mode: host)
+docker-compose -f docker-compose.sandbox.yml up -d
+```
+
+### Opção 3: Deploy com PostgreSQL
 ```bash
 # MoreFocus + PostgreSQL local
 docker-compose -f docker-compose.production.yml --profile postgres up -d
-```
-
-### Opção 3: Deploy com Redis
-```bash
-# MoreFocus + Redis para cache
-docker-compose -f docker-compose.production.yml --profile redis up -d
 ```
 
 ### Opção 4: Deploy Completo
@@ -86,6 +86,21 @@ DB_PASSWORD=sua_senha
 DB_SSL=true
 ```
 
+## 🔧 Detecção Automática de Ambiente
+
+O script `docker-deploy.sh` detecta automaticamente limitações do ambiente:
+
+### **Ambiente Normal:**
+- ✅ Build customizado do Dockerfile
+- ✅ Network bridge padrão
+- ✅ Todas as funcionalidades
+
+### **Ambiente Limitado (Sandbox):**
+- ✅ Usa imagem oficial n8n
+- ✅ Network mode: host
+- ✅ Contorna limitações de iptables
+- ✅ Funcionalidade completa
+
 ## 🔧 Comandos Úteis
 
 ### Gerenciamento
@@ -95,6 +110,8 @@ docker logs -f morefocus-app
 
 # Parar serviços
 docker-compose -f docker-compose.production.yml down
+# ou para ambiente limitado:
+docker-compose -f docker-compose.sandbox.yml down
 
 # Reiniciar
 docker-compose -f docker-compose.production.yml restart
@@ -158,11 +175,9 @@ WEBHOOK_URL=http://IP_PUBLICO:5678/
 ./docker-deploy.sh
 ```
 
-### Localhost/Desenvolvimento
+### Sandbox/Desenvolvimento
 ```bash
-# Configuração para desenvolvimento local
-cp .env.example .env
-# Editar: WEBHOOK_URL=http://localhost:5678/
+# O script detecta automaticamente e usa modo compatibilidade
 ./docker-deploy.sh
 ```
 
@@ -263,6 +278,15 @@ docker stats morefocus-app
 # deploy.resources.limits.memory: "2G"
 ```
 
+### Limitações de Ambiente
+```bash
+# Se o deploy falhar com erros de iptables:
+# O script automaticamente detecta e usa docker-compose.sandbox.yml
+
+# Verificar modo usado:
+cat deploy-info.txt | grep "Modo:"
+```
+
 ## 📊 Monitoramento
 
 ### Health Checks
@@ -317,6 +341,22 @@ docker stack deploy -c docker-compose.production.yml morefocus
 - **AWS t3.micro**: Gratuito (Free Tier)
 - **GCP e1-micro**: Gratuito (Free Tier)
 - **Azure B1s**: ~$15/mês
+
+## 🔄 Atualizações
+
+### Versão Normal
+```bash
+git pull
+docker build -t morefocus:latest .
+docker-compose -f docker-compose.production.yml up -d
+```
+
+### Versão Sandbox
+```bash
+git pull
+docker pull n8nio/n8n:latest
+docker-compose -f docker-compose.sandbox.yml up -d
+```
 
 ## 📞 Suporte
 

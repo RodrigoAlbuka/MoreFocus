@@ -1,16 +1,28 @@
 # MoreFocus - Dockerfile
-# Imagem Docker otimizada para deploy em qualquer servidor
-# Baseada em Alpine Linux para menor tamanho
+# Imagem Docker otimizada baseada na imagem oficial do n8n
+# Compatível com ambientes que têm limitações de iptables
 
-FROM node:20-alpine
+FROM n8nio/n8n:latest
 
 # Metadados da imagem
 LABEL maintainer="MoreFocus Team <morefocusbr@gmail.com>"
-LABEL version="1.0.0"
+LABEL version="1.0.1"
 LABEL description="MoreFocus - Automação RPA com n8n e agentes de IA"
 LABEL org.opencontainers.image.source="https://github.com/RodrigoAlbuka/MoreFocus"
 
-# Variáveis de ambiente
+# Usar usuário root temporariamente para configurações
+USER root
+
+# Instalar dependências básicas (usando apt em vez de apk)
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    bash \
+    netcat-openbsd \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# Variáveis de ambiente otimizadas
 ENV NODE_ENV=production
 ENV N8N_HOST=0.0.0.0
 ENV N8N_PORT=5678
@@ -26,34 +38,10 @@ ENV EXECUTIONS_DATA_MAX_AGE=168
 ENV N8N_RUNNERS_ENABLED=true
 ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
 
-# Instalar dependências do sistema
-RUN apk add --no-cache \
-    curl \
-    wget \
-    git \
-    bash \
-    tzdata \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
-
-# Configurar timezone
-RUN cp /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime \
-    && echo "America/Sao_Paulo" > /etc/timezone
-
-# Instalar n8n globalmente
-RUN npm install -g n8n@latest
-
-# Criar usuário não-root para segurança
-RUN addgroup -g 1000 n8n \
-    && adduser -u 1000 -G n8n -s /bin/bash -D n8n
-
 # Criar diretórios necessários
-RUN mkdir -p /home/n8n/.n8n \
-    && mkdir -p /opt/morefocus/workflows \
+RUN mkdir -p /opt/morefocus/workflows \
     && mkdir -p /opt/morefocus/scripts \
-    && mkdir -p /opt/morefocus/backups \
-    && chown -R n8n:n8n /home/n8n \
-    && chown -R n8n:n8n /opt/morefocus
+    && mkdir -p /opt/morefocus/backups
 
 # Copiar arquivos da aplicação
 COPY --chown=n8n:n8n workflows/ /opt/morefocus/workflows/
@@ -159,12 +147,12 @@ EOF
 # Tornar script executável
 RUN chmod +x /opt/morefocus/start.sh
 
-# Criar script de health check
+# Criar script de health check (usando wget em vez de curl)
 RUN cat > /opt/morefocus/healthcheck.sh << 'EOF'
 #!/bin/bash
 
-# Health check para n8n
-if curl -f http://localhost:5678/healthz > /dev/null 2>&1; then
+# Health check para n8n usando wget
+if wget --quiet --tries=1 --spider http://localhost:5678/healthz > /dev/null 2>&1; then
     exit 0
 else
     exit 1
@@ -182,9 +170,9 @@ WORKDIR /home/n8n
 # Expor porta
 EXPOSE 5678
 
-# Health check
+# Health check usando wget
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD /opt/morefocus/healthcheck.sh
+    CMD wget --quiet --tries=1 --spider http://localhost:5678/healthz || exit 1
 
 # Volume para persistência de dados
 VOLUME ["/home/n8n/.n8n"]
