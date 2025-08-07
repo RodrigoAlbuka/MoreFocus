@@ -1,0 +1,35 @@
+{
+  "name": "morefocus",
+  "version": "1.0.0",
+  "description": "MoreFocus - Automação RPA com n8n e agentes de IA",
+  "main": "index.js",
+  "scripts": {
+    "start": "n8n start",
+    "build": "echo 'Build completed'",
+    "dev": "n8n start",
+    "test": "echo 'No tests specified'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RodrigoAlbuka/MoreFocus.git"
+  },
+  "keywords": [
+    "n8n",
+    "automation",
+    "rpa",
+    "workflow",
+    "ai",
+    "agents"
+  ],
+  "author": "MoreFocus Team <morefocusbr@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "n8n": "^1.104.2"
+  },
+  "devDependencies": {},
+  "homepage": "https://github.com/RodrigoAlbuka/MoreFocus#readme"
+}
+

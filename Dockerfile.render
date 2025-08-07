@@ -1,0 +1,99 @@
+# MoreFocus - Dockerfile para Render.com
+# Otimizado para deploy na plataforma Render
+
+FROM n8nio/n8n:latest
+
+# Metadados
+LABEL maintainer="MoreFocus Team <morefocusbr@gmail.com>"
+LABEL version="1.0.0-render"
+LABEL description="MoreFocus - Automação RPA para Render.com"
+
+# Usar usuário root para configurações
+USER root
+
+# Instalar dependências necessárias
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    git \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Criar diretórios
+RUN mkdir -p /opt/morefocus/workflows \
+    && mkdir -p /opt/morefocus/backups
+
+# Copiar workflows
+COPY workflows/ /opt/morefocus/workflows/
+
+# Criar script de inicialização para Render
+RUN cat > /opt/morefocus/start-render.sh << 'EOF'
+#!/bin/bash
+
+echo "🚀 Iniciando MoreFocus no Render..."
+
+# Configurar variáveis para Render
+export N8N_HOST=${N8N_HOST:-0.0.0.0}
+export N8N_PORT=${N8N_PORT:-10000}
+export N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}
+export N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+export N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-MoreFocus2024!}
+export WEBHOOK_URL=${WEBHOOK_URL:-https://morefocus.onrender.com/}
+export GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Sao_Paulo}
+export DB_TYPE=${DB_TYPE:-sqlite}
+export DB_SQLITE_DATABASE=${DB_SQLITE_DATABASE:-/home/node/.n8n/database.sqlite}
+
+# Criar diretório .n8n se não existir
+mkdir -p /home/node/.n8n/workflows
+
+# Copiar workflows se existirem
+if [ -d "/opt/morefocus/workflows" ] && [ "$(ls -A /opt/morefocus/workflows/*.json 2>/dev/null)" ]; then
+    echo "📥 Importando workflows..."
+    cp /opt/morefocus/workflows/*.json /home/node/.n8n/workflows/ 2>/dev/null || true
+fi
+
+# Configurar permissões
+chown -R node:node /home/node/.n8n
+
+echo "✅ Configuração concluída!"
+echo "🌐 Acessível em: $WEBHOOK_URL"
+echo "👤 Usuário: $N8N_BASIC_AUTH_USER"
+
+# Iniciar n8n como usuário node
+exec su-exec node n8n start
+EOF
+
+# Tornar executável
+RUN chmod +x /opt/morefocus/start-render.sh
+
+# Configurar permissões
+RUN chown -R node:node /opt/morefocus
+
+# Voltar para usuário node
+USER node
+
+# Variáveis de ambiente para Render
+ENV NODE_ENV=production
+ENV N8N_HOST=0.0.0.0
+ENV N8N_PORT=10000
+ENV N8N_PROTOCOL=http
+ENV GENERIC_TIMEZONE=America/Sao_Paulo
+ENV N8N_LOG_LEVEL=info
+ENV N8N_DIAGNOSTICS_ENABLED=false
+ENV N8N_VERSION_NOTIFICATIONS_ENABLED=false
+ENV N8N_RUNNERS_ENABLED=true
+ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+
+# Expor porta do Render
+EXPOSE 10000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:10000/healthz || exit 1
+
+# Volume para dados
+VOLUME ["/home/node/.n8n"]
+
+# Comando de inicialização
+CMD ["/opt/morefocus/start-render.sh"]
+

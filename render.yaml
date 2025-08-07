@@ -1,0 +1,78 @@
+# MoreFocus - Configuração para Render.com
+# Deploy automatizado da aplicação MoreFocus
+
+services:
+  - type: web
+    name: morefocus
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    branch: main
+    
+    # Configurações de ambiente
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: N8N_HOST
+        value: 0.0.0.0
+      
+      - key: N8N_PORT
+        value: 10000
+      
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: true
+      
+      - key: N8N_BASIC_AUTH_USER
+        value: admin
+      
+      - key: N8N_BASIC_AUTH_PASSWORD
+        generateValue: true
+      
+      - key: WEBHOOK_URL
+        value: https://morefocus.onrender.com/
+      
+      - key: GENERIC_TIMEZONE
+        value: America/Sao_Paulo
+      
+      - key: DB_TYPE
+        value: sqlite
+      
+      - key: DB_SQLITE_DATABASE
+        value: /home/node/.n8n/database.sqlite
+      
+      - key: N8N_LOG_LEVEL
+        value: info
+      
+      - key: EXECUTIONS_DATA_PRUNE
+        value: true
+      
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: 168
+      
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: false
+      
+      - key: N8N_VERSION_NOTIFICATIONS_ENABLED
+        value: false
+      
+      - key: N8N_RUNNERS_ENABLED
+        value: true
+    
+    # Configurações de build
+    buildCommand: echo "Using Docker build"
+    startCommand: echo "Using Docker CMD"
+    
+    # Health check
+    healthCheckPath: /healthz
+    
+    # Configurações de recursos
+    disk:
+      name: morefocus-data
+      mountPath: /home/node/.n8n
+      sizeGB: 1
+    
+    # Auto-deploy
+    autoDeploy: true
+
