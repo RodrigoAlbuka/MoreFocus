@@ -5,7 +5,7 @@ services:
   - type: web
     name: morefocus
     env: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.simple
     plan: free
     region: oregon
     branch: main

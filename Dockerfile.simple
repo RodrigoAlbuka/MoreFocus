@@ -1,0 +1,82 @@
+# MoreFocus - Dockerfile Simplificado para Render
+# Sem caracteres especiais que causam problemas de parsing
+
+FROM n8nio/n8n:latest
+
+# Metadados
+LABEL maintainer="MoreFocus Team"
+LABEL version="1.0.0-render-simple"
+LABEL description="MoreFocus - Automacao RPA para Render.com"
+
+# Usar usuario root para configuracoes
+USER root
+
+# Instalar dependencias necessarias
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    git \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Criar diretorios
+RUN mkdir -p /opt/morefocus/workflows \
+    && mkdir -p /opt/morefocus/backups
+
+# Copiar workflows
+COPY workflows/ /opt/morefocus/workflows/
+
+# Criar script de inicializacao simples
+RUN echo '#!/bin/bash' > /opt/morefocus/start.sh && \
+    echo 'echo "Iniciando MoreFocus..."' >> /opt/morefocus/start.sh && \
+    echo 'export N8N_HOST=${N8N_HOST:-0.0.0.0}' >> /opt/morefocus/start.sh && \
+    echo 'export N8N_PORT=${N8N_PORT:-10000}' >> /opt/morefocus/start.sh && \
+    echo 'export N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE:-true}' >> /opt/morefocus/start.sh && \
+    echo 'export N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}' >> /opt/morefocus/start.sh && \
+    echo 'export N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD:-MoreFocus2024}' >> /opt/morefocus/start.sh && \
+    echo 'export WEBHOOK_URL=${WEBHOOK_URL:-https://morefocus.onrender.com/}' >> /opt/morefocus/start.sh && \
+    echo 'export GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Sao_Paulo}' >> /opt/morefocus/start.sh && \
+    echo 'export DB_TYPE=${DB_TYPE:-sqlite}' >> /opt/morefocus/start.sh && \
+    echo 'export DB_SQLITE_DATABASE=${DB_SQLITE_DATABASE:-/home/node/.n8n/database.sqlite}' >> /opt/morefocus/start.sh && \
+    echo 'mkdir -p /home/node/.n8n/workflows' >> /opt/morefocus/start.sh && \
+    echo 'if [ -d "/opt/morefocus/workflows" ]; then' >> /opt/morefocus/start.sh && \
+    echo '  cp /opt/morefocus/workflows/*.json /home/node/.n8n/workflows/ 2>/dev/null || true' >> /opt/morefocus/start.sh && \
+    echo 'fi' >> /opt/morefocus/start.sh && \
+    echo 'chown -R node:node /home/node/.n8n' >> /opt/morefocus/start.sh && \
+    echo 'echo "Configuracao concluida!"' >> /opt/morefocus/start.sh && \
+    echo 'exec su-exec node n8n start' >> /opt/morefocus/start.sh
+
+# Tornar executavel
+RUN chmod +x /opt/morefocus/start.sh
+
+# Configurar permissoes
+RUN chown -R node:node /opt/morefocus
+
+# Voltar para usuario node
+USER node
+
+# Variaveis de ambiente para Render
+ENV NODE_ENV=production
+ENV N8N_HOST=0.0.0.0
+ENV N8N_PORT=10000
+ENV N8N_PROTOCOL=http
+ENV GENERIC_TIMEZONE=America/Sao_Paulo
+ENV N8N_LOG_LEVEL=info
+ENV N8N_DIAGNOSTICS_ENABLED=false
+ENV N8N_VERSION_NOTIFICATIONS_ENABLED=false
+ENV N8N_RUNNERS_ENABLED=true
+ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+
+# Expor porta do Render
+EXPOSE 10000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:10000/healthz || exit 1
+
+# Volume para dados
+VOLUME ["/home/node/.n8n"]
+
+# Comando de inicializacao
+CMD ["/opt/morefocus/start.sh"]
+
