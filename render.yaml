@@ -4,8 +4,9 @@
 services:
   - type: web
     name: morefocus
-    env: docker
-    dockerfilePath: ./Dockerfile.simple
+    env: node
+    buildCommand: npm install -g n8n@latest
+    startCommand: ./start.sh
     plan: free
     region: oregon
     branch: main
